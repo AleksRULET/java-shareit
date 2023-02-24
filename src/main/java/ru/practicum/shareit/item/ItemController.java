@@ -38,6 +38,7 @@ public class ItemController {
     public List<ItemDto> getAll(@RequestHeader("X-Sharer-User-Id") long userId) {
         return itemService.findAll(userId);
     }
+
     @GetMapping("/search")
     public List<ItemDto> search(@RequestParam String text) {
         if (text.isBlank()) {
