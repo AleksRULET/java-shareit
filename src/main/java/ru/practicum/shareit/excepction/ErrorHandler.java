@@ -45,4 +45,39 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
             log.warn(e.getMessage(), e);
             return new ErrorResponse(e.getMessage());
         }
+
+        @ExceptionHandler
+        @ResponseStatus(HttpStatus.BAD_REQUEST)
+        public ErrorResponse handleNotAvailable(final NotAvailableException e) {
+            log.warn(e.getMessage(), e);
+            return new ErrorResponse(e.getMessage());
+        }
+
+        @ExceptionHandler
+        @ResponseStatus(HttpStatus.BAD_REQUEST)
+        public ErrorResponse handleDateException(final DateException e) {
+            log.warn(e.getMessage(), e);
+            return new ErrorResponse(e.getMessage());
+        }
+
+        @ExceptionHandler
+        @ResponseStatus(HttpStatus.BAD_REQUEST)
+        public ErrorResponse handleConfirmedException(final StatusConfirmedException e) {
+            log.warn(e.getMessage(), e);
+            return new ErrorResponse(e.getMessage());
+        }
+
+        @ExceptionHandler
+        @ResponseStatus(HttpStatus.NOT_FOUND)
+        public ErrorResponse handleNotBookingException(final NotBookingException e) {
+            log.warn(e.getMessage(), e);
+            return new ErrorResponse(e.getMessage());
+        }
+
+        @ExceptionHandler
+        @ResponseStatus(HttpStatus.BAD_REQUEST)
+        public ErrorResponse handleComment(final CommentException e) {
+            log.warn(e.getMessage(), e);
+            return new ErrorResponse(e.getMessage());
+        }
     }
