@@ -22,7 +22,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBooker_IdAndEndBeforeOrderByStartDesc(Long bookerId, LocalDateTime end);
 
     @Query("select b from Booking b where b.item.owner.id = ?1 order by b.start desc")
-    List<Booking> findAllOwner(Long userId);
+    List<Booking> findAllByOwner(Long userId);
 
     @Query("select b from Booking b where b.item.owner.id = ?1 " +
             "and current_timestamp between b.start and b.end order by b.start desc")

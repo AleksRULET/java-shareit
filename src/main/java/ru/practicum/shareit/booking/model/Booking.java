@@ -15,23 +15,23 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "BOOKINGS", schema = "public")
+@Table(name = "bookings", schema = "public")
 public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID", nullable = false)
+    @Column(name = "id", nullable = false)
     private Long id;
-    @Column(name = "START_DATE")
+    @Column(name = "start_date")
     private LocalDateTime start;
-    @Column(name = "END_DATE")
+    @Column(name = "end_date")
     private LocalDateTime end;
     @ManyToOne
-    @JoinColumn(name = "ITEM_ID")
+    @JoinColumn(name = "item_id")
     private Item item;
     @ManyToOne
-    @JoinColumn(name = "BOOKER_ID")
+    @JoinColumn(name = "booker_id")
     private User booker;
-    @Column(name = "STATUS")
+    @Column(name = "status")
     private Status status;
 
 }

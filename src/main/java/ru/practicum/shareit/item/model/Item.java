@@ -11,23 +11,23 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "ITEMS", schema = "public")
+@Table(name = "items", schema = "public")
 public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID", nullable = false)
+    @Column(name = "id", nullable = false)
     private Long id;
     @ManyToOne
-    @JoinColumn(name = "OWNER_ID")
+    @JoinColumn(name = "owner_id")
     private User owner;
-    @Column(name = "NAME")
+    @Column(name = "name")
     private String name;
-    @Column(name = "DESCRIPTION")
+    @Column(name = "description")
     private String description;
-    @Column(name = "IS_AVAILABLE")
+    @Column(name = "is_available")
     private Boolean isAvailable;
     @ManyToOne
-    @JoinColumn(name = "REQUEST_ID")
+    @JoinColumn(name = "request_id")
     private ItemRequest request;
 
 }

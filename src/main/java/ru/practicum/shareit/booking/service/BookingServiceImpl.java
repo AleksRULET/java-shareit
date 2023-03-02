@@ -112,7 +112,7 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> bookings = new ArrayList<>();
         switch (state) {
             case ALL:
-                bookings = bookingDao.findAllOwner(userId);
+                bookings = bookingDao.findAllByOwner(userId);
                 break;
             case CURRENT:
                 bookings = bookingDao.findCurrentOwner(userId);
