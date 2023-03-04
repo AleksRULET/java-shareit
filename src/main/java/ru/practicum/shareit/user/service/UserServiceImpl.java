@@ -34,15 +34,15 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserRefundDto save(UserDto userDto) {
         User user  = UserMapper.toUser(null, userDto);
-            User userRefund = repository.save(user);
-            return UserMapper.toUserDto(userRefund);
+        User userRefund = repository.save(user);
+        return UserMapper.toUserDto(userRefund);
     }
 
     @Transactional
     @Override
     public UserRefundDto edit(long userId, UserDto userDto) {
         User userNew = UserMapper.toUser(userId, userDto);
-        User userOld = repository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("Рлдьзователь не найден"));
+        User userOld = repository.findById(userId).orElseThrow(() -> new ObjectNotFoundException("Пользователь не найден"));
         if (userNew.getName() != null && !userNew.getName().isBlank()) {
             userOld.setName(userNew.getName());
         }
