@@ -22,6 +22,7 @@ public class UserController {
     public List<UserRefundDto> findAll() {
         return service.findAll();
     }
+
     @GetMapping("/{userId}")
     public UserRefundDto findById(
             @PathVariable long userId
