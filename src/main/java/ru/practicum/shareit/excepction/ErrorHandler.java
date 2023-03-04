@@ -12,7 +12,7 @@ import javax.validation.ConstraintViolationException;
     @RestControllerAdvice
     public class ErrorHandler {
 
-      @ExceptionHandler
+        @ExceptionHandler
         @ResponseStatus(HttpStatus.BAD_REQUEST)
         public ErrorResponse handleValidationException(final MethodArgumentNotValidException e) {
             log.warn(e.getMessage(), e);
