@@ -27,13 +27,6 @@ import javax.validation.ConstraintViolationException;
         }
 
         @ExceptionHandler
-        @ResponseStatus(HttpStatus.CONFLICT)
-        public ErrorResponse handleDuplicateException(final DuplicateException e) {
-            log.warn(e.getMessage());
-            return new ErrorResponse(e.getMessage());
-        }
-
-        @ExceptionHandler
         @ResponseStatus(HttpStatus.NOT_FOUND)
         public ErrorResponse handleObjectNotFoundException(final ObjectNotFoundException e) {
             log.warn(e.getMessage());
@@ -50,13 +43,6 @@ import javax.validation.ConstraintViolationException;
         @ExceptionHandler
         @ResponseStatus(HttpStatus.BAD_REQUEST)
         public ErrorResponse handleNotAvailable(final NotAvailableException e) {
-            log.warn(e.getMessage(), e);
-            return new ErrorResponse(e.getMessage());
-        }
-
-        @ExceptionHandler
-        @ResponseStatus(HttpStatus.BAD_REQUEST)
-        public ErrorResponse handleDateException(final DateException e) {
             log.warn(e.getMessage(), e);
             return new ErrorResponse(e.getMessage());
         }

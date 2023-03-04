@@ -574,6 +574,7 @@ class BookingServiceImplTest {
                 PageRequest.of(page, size));
         verify(bookingDao, never()).findByBooker_IdAndStatus(userId, Status.REJECTED,
                 PageRequest.of(page, size));
+
     }
 
     @Test
@@ -803,7 +804,6 @@ class BookingServiceImplTest {
 
         assertThrows(ObjectNotFoundException.class, () -> service.findAllForUser(userId, state, page, size),
                 "Пользователь не найден");
-
         verify(bookingDao, never()).findByBooker_IdOrderByStartDesc(userId, PageRequest.of(page, size));
         verify(bookingDao, never()).findByBooker_IdAndStartBeforeAndEndAfterOrderByStartDesc(
                 userId, LocalDateTime.now(), LocalDateTime.now(), PageRequest.of(page, size));
