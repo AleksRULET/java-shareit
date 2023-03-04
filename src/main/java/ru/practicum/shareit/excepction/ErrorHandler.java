@@ -6,12 +6,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import javax.validation.ConstraintViolationException;
 
     @Slf4j
     @RestControllerAdvice
     public class ErrorHandler {
 
-        @ExceptionHandler
+      @ExceptionHandler
         @ResponseStatus(HttpStatus.BAD_REQUEST)
         public ErrorResponse handleValidationException(final MethodArgumentNotValidException e) {
             log.warn(e.getMessage(), e);
@@ -77,6 +78,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
         @ExceptionHandler
         @ResponseStatus(HttpStatus.BAD_REQUEST)
         public ErrorResponse handleComment(final CommentException e) {
+            log.warn(e.getMessage(), e);
+            return new ErrorResponse(e.getMessage());
+        }
+
+
+        @ExceptionHandler
+        @ResponseStatus(HttpStatus.BAD_REQUEST)
+        public ErrorResponse validated(final ConstraintViolationException e) {
             log.warn(e.getMessage(), e);
             return new ErrorResponse(e.getMessage());
         }

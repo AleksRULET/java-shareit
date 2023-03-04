@@ -11,7 +11,6 @@ import ru.practicum.shareit.Create;
 import ru.practicum.shareit.Update;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 @Setter
@@ -22,6 +21,4 @@ public class ItemRequestDto {
     @NotBlank(groups = {Create.class})
     @Size(max = 200, groups = {Update.class, Create.class})
     private String description;
-    @NotNull(groups = {Create.class})
-    private Long requesterId;
 }
