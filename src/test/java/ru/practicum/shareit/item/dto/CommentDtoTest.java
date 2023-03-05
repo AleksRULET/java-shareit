@@ -15,7 +15,7 @@ public class CommentDtoTest {
 
     @Test
     void testCommentDto() throws Exception {
-        CommentDto commentDto = new CommentDto( 3L,
+        CommentDto commentDto = new CommentDto(3L,
                 "Комментарий"
         );
         JsonContent<CommentDto> result = json.write(commentDto);

@@ -15,7 +15,7 @@ public class ItemRefundDtoTest {
 
     @Test
     void testItemRefund() throws Exception {
-        ItemRefundDto itemDto = new ItemRefundDto( 3L,
+        ItemRefundDto itemDto = new ItemRefundDto(3L,
                 "Предмет", "Описание",
                 true, 1L
         );

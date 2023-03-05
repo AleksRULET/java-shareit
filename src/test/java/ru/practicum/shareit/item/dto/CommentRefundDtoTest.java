@@ -18,7 +18,7 @@ public class CommentRefundDtoTest {
     @Test
     void testCommentRefundDto() throws Exception {
         LocalDateTime time = LocalDateTime.parse("2023-03-06T00:26:37.6943719");
-        CommentRefundDto commentRefundDto = new CommentRefundDto( 3L,
+        CommentRefundDto commentRefundDto = new CommentRefundDto(3L,
                 "Текст", "John",
                 time
         );

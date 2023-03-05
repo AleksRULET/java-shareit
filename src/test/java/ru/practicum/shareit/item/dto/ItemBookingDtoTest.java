@@ -6,7 +6,6 @@ import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.json.JsonContent;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -18,7 +17,7 @@ public class ItemBookingDtoTest {
 
     @Test
     void testItemBookingDto() throws Exception {
-        ItemBookingDto itemBookingDto = new ItemBookingDto( 3L,
+        ItemBookingDto itemBookingDto = new ItemBookingDto(3L,
                 "Предмет", "Описание",
                 true, new ItemBookingDto.Booking(1L, 2L),
                 new ItemBookingDto.Booking(3L, 4L),
