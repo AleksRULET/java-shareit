@@ -9,8 +9,8 @@ import ru.practicum.shareit.request.dto.ItemRequestRefundDto;
 import ru.practicum.shareit.request.service.RequestService;
 import ru.practicum.shareit.booking.validation.ValidPage;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import java.util.List;
 
 @Validated
@@ -38,8 +38,8 @@ public class RequestController {
     @GetMapping("/all")
     public List<ItemRequestRefundDto> findAllNotOwner(
             @RequestHeader("X-Sharer-User-Id") long userId,
-            @RequestParam(value = "from", defaultValue = "0") @Min(0) int from,
-            @RequestParam(value = "size", defaultValue = "10") @Min(1) @Max(50) int size
+            @RequestParam(value = "from", defaultValue = "0") @PositiveOrZero int from,
+            @RequestParam(value = "size", defaultValue = "10") @Positive int size
     ) {
         int page = ValidPage.page(from, size);
         return service.findAllNotOwner(userId, page, size);

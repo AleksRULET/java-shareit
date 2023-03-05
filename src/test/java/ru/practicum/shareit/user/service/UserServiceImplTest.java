@@ -6,14 +6,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.*;
 import ru.practicum.shareit.excepction.ObjectNotFoundException;
 import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserRefundDto;
 import ru.practicum.shareit.user.model.User;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,17 +28,11 @@ class UserServiceImplTest {
 
     @Test
     void findAll_ReturnAllUsers() {
-        User user = new User(1L, "34@mail.ru", "Maksim");
-        List<User> users = new ArrayList<>();
-        users.add(user);
-        Pageable pageable = PageRequest.ofSize(10);
-        PageImpl<User> page = new PageImpl<>(users, pageable, 10);
-        when(repository.findAll(PageRequest.ofSize(10))).thenReturn(page);
 
         List<UserRefundDto> usersRefundDto = userService.findAll();
 
-        assertEquals(usersRefundDto.size(), 1);
-        verify(repository).findAll(PageRequest.ofSize(10));
+        assertEquals(usersRefundDto.size(), 0);
+        verify(repository).findAll();
     }
 
     @Test

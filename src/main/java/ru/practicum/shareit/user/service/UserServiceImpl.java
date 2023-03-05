@@ -21,7 +21,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserRefundDto> findAll() {
-        return UserMapper.toUsersDto(repository.findAll(PageRequest.ofSize(10)).getContent());
+        return UserMapper.toUsersDto(repository.findAll());
     }
 
     @Override

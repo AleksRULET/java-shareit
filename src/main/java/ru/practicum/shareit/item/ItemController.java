@@ -13,8 +13,8 @@ import ru.practicum.shareit.item.dto.ItemRefundDto;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.booking.validation.ValidPage;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import java.util.List;
 
 @Validated
@@ -54,8 +54,8 @@ public class ItemController {
     @GetMapping
     public List<ItemBookingDto> findAll(
             @RequestHeader("X-Sharer-User-Id") long userId,
-            @RequestParam(value = "from", defaultValue = "0") @Min(0) int from,
-            @RequestParam(value = "size", defaultValue = "10") @Min(1) @Max(50) int size
+            @RequestParam(value = "from", defaultValue = "0") @PositiveOrZero int from,
+            @RequestParam(value = "size", defaultValue = "10") @Positive int size
     ) {
         int page = ValidPage.page(from, size);
         return service.findAllForUser(page, size, userId);
@@ -64,8 +64,8 @@ public class ItemController {
     @GetMapping("/search")
     public List<ItemRefundDto> search(
             @RequestParam String text,
-            @RequestParam(value = "from", defaultValue = "0") @Min(0) int from,
-            @RequestParam(value = "size", defaultValue = "10") @Min(1) @Max(50) int size
+            @RequestParam(value = "from", defaultValue = "0") @PositiveOrZero int from,
+            @RequestParam(value = "size", defaultValue = "10") @Positive int size
     ) {
         if (text.isBlank()) {
             return List.of();
