@@ -6,6 +6,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import javax.validation.ConstraintViolationException;
 
     @Slf4j
     @RestControllerAdvice
@@ -21,13 +22,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
         @ExceptionHandler
         @ResponseStatus(HttpStatus.NOT_FOUND)
         public ErrorResponse handleNotOwner(final NotOwnerException e) {
-            log.warn(e.getMessage());
-            return new ErrorResponse(e.getMessage());
-        }
-
-        @ExceptionHandler
-        @ResponseStatus(HttpStatus.CONFLICT)
-        public ErrorResponse handleDuplicateException(final DuplicateException e) {
             log.warn(e.getMessage());
             return new ErrorResponse(e.getMessage());
         }
@@ -55,13 +49,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
         @ExceptionHandler
         @ResponseStatus(HttpStatus.BAD_REQUEST)
-        public ErrorResponse handleDateException(final DateException e) {
-            log.warn(e.getMessage(), e);
-            return new ErrorResponse(e.getMessage());
-        }
-
-        @ExceptionHandler
-        @ResponseStatus(HttpStatus.BAD_REQUEST)
         public ErrorResponse handleConfirmedException(final StatusConfirmedException e) {
             log.warn(e.getMessage(), e);
             return new ErrorResponse(e.getMessage());
@@ -77,6 +64,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
         @ExceptionHandler
         @ResponseStatus(HttpStatus.BAD_REQUEST)
         public ErrorResponse handleComment(final CommentException e) {
+            log.warn(e.getMessage(), e);
+            return new ErrorResponse(e.getMessage());
+        }
+
+
+        @ExceptionHandler
+        @ResponseStatus(HttpStatus.BAD_REQUEST)
+        public ErrorResponse validated(final ConstraintViolationException e) {
             log.warn(e.getMessage(), e);
             return new ErrorResponse(e.getMessage());
         }

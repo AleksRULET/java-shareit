@@ -7,21 +7,24 @@ import lombok.Setter;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "REQUESTS", schema = "public")
+@Table(name = "requests", schema = "public")
 public class ItemRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID")
+    @Column(name = "id")
     private Long id;
-    @Column(name = "DESCRIPTION")
+    @Column(name = "description")
     private String description;
     @ManyToOne
-    @JoinColumn(name = "REQUESTER_ID")
+    @JoinColumn(name = "requester_id")
     private User requester;
+    @Column(name = "created")
+    private LocalDateTime created;
 }

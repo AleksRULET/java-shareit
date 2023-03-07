@@ -11,6 +11,7 @@ import ru.practicum.shareit.user.service.UserService;
 
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping(path = "/users")
 @RequiredArgsConstructor
@@ -23,22 +24,31 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public UserRefundDto findById(@PathVariable long userId) {
+    public UserRefundDto findById(
+            @PathVariable long userId
+    ) {
         return service.findById(userId);
     }
 
     @PatchMapping("/{userId}")
-    public UserRefundDto edit(@PathVariable long userId, @Validated({Update.class}) @RequestBody UserDto userDto) {
+    public UserRefundDto edit(
+            @PathVariable long userId,
+            @Validated({Update.class}) @RequestBody UserDto userDto
+    ) {
         return service.edit(userId, userDto);
     }
 
     @PostMapping
-    public UserRefundDto add(@Validated({Create.class}) @RequestBody UserDto userDto) {
+    public UserRefundDto add(
+            @Validated({Create.class}) @RequestBody UserDto userDto
+    ) {
         return service.save(userDto);
     }
 
     @DeleteMapping("/{userId}")
-    public void delete(@PathVariable long userId) {
+    public void delete(
+            @PathVariable long userId
+    ) {
         service.delete(userId);
     }
 }
