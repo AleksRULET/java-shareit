@@ -1,133 +1,108 @@
 package ru.practicum.shareit.user.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.practicum.shareit.excepction.ObjectNotFoundException;
-import ru.practicum.shareit.user.dao.UserRepository;
-import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.dto.UserRefundDto;
+import ru.practicum.shareit.exception.EntityNotFoundException;
 import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
+
     @Mock
-    private UserRepository repository;
+    private UserRepository userRepository;
 
     @InjectMocks
     private UserServiceImpl userService;
 
-    @Test
-    void findAll_ReturnAllUsers() {
+    private User user;
 
-        List<UserRefundDto> usersRefundDto = userService.findAll();
-
-        assertEquals(usersRefundDto.size(), 0);
-        verify(repository).findAll();
+    @BeforeEach
+    void initUser() {
+        user = new User();
+        user.setId(0L);
+        user.setName("name");
+        user.setEmail("email");
     }
 
     @Test
-    void findById_whenUserFound_thenReturnUser() {
-        long id = 1L;
-        Optional<User> user = Optional.of(new User(1L, "34@mail.ru", "Maksim"));
-        when(repository.findById(id)).thenReturn(user);
+    void getUserWhenUserExistThenReturnUser() {
+        long userId = 0L;
+        Mockito.when(userRepository.findById(Mockito.anyLong()))
+                .thenReturn(Optional.of(user));
 
-        UserRefundDto usersDto = userService.findById(id);
+        User result = userService.getUser(userId);
 
-        assertEquals(usersDto.getId(), 1);
-        assertEquals(usersDto.getEmail(), "34@mail.ru");
-        assertEquals(usersDto.getName(), "Maksim");
+        assertThat(result).isEqualTo(user);
     }
 
     @Test
-    void findById_whenUserNotFound_thenReturnNotObjectException() {
-        long id = 1L;
-        when(repository.findById(id)).thenReturn(Optional.empty());
+    void getUserWhenUserNotExistThenInterrupt() {
+        long userId = 0L;
+        Mockito.when(userRepository.findById(Mockito.anyLong()))
+                .thenReturn(Optional.empty());
 
-        assertThrows(ObjectNotFoundException.class, () -> userService.findById(id),
-                "Пользователь не найден");
+        assertThrows(EntityNotFoundException.class, () -> userService.getUser(userId));
     }
 
     @Test
-    void save_thenReturnUser() {
-        long id = 1L;
-        UserDto userDto = new UserDto("34@mail.ru", "Maksim");
-        User user = new User(id, "34@mail.ru", "Maksim");
-        when(repository.save(Mockito.any())).thenReturn(user);
+    void getUsersWhenUserExistThenReturnUser() {
+        Mockito.when(userRepository.findAll())
+                .thenReturn(List.of(user));
 
-        UserRefundDto userRefundDto = userService.save(userDto);
-        assertEquals(userRefundDto.getId(), 1);
-        assertEquals(userRefundDto.getEmail(), "34@mail.ru");
-        assertEquals(userRefundDto.getName(), "Maksim");
+        List<User> result = userService.getUsers();
+
+        assertThat(result).hasSize(1);
     }
 
     @Test
-    void edit_allDataUser_thenReturnUser() {
-        long id = 1L;
-        UserDto userDto = new UserDto("36@mail.ru", "Maksim2");
-        User user = new User(id, "34@mail.ru", "Maksim");
-        when(repository.findById(id)).thenReturn(Optional.of(user));
+    void createUserWhenUserValidThenReturnUser() {
+        Mockito.when(userRepository.save(Mockito.any()))
+                .thenReturn(user);
 
-        UserRefundDto usersDto = userService.edit(id, userDto);
+        User result = userService.createUser(user);
 
-        assertEquals(usersDto.getId(), 1);
-        assertEquals(usersDto.getEmail(), "36@mail.ru");
-        assertEquals(usersDto.getName(), "Maksim2");
+        assertThat(result).isEqualTo(user);
     }
 
     @Test
-    void edit_mailUser_thenReturnUser() {
-        long id = 1L;
-        UserDto userDto = new UserDto("36@mail.ru", null);
-        User user = new User(id, "34@mail.ru", "Maksim");
-        when(repository.findById(id)).thenReturn(Optional.of(user));
+    void updateUserWhenUserValidThenReturnUser() {
+        Mockito.when(userRepository.save(Mockito.any()))
+                .thenReturn(user);
 
-        UserRefundDto usersDto = userService.edit(id, userDto);
+        User result = userService.updateUser(user);
 
-        assertEquals(usersDto.getId(), 1);
-        assertEquals(usersDto.getEmail(), "36@mail.ru");
-        assertEquals(usersDto.getName(), "Maksim");
+        assertThat(result).isEqualTo(user);
     }
 
     @Test
-    void edit_nameUser_thenReturnUser() {
-        long id = 1L;
-        UserDto userDto = new UserDto(null, "Maksim2");
-        User user = new User(id, "34@mail.ru", "Maksim");
-        when(repository.findById(id)).thenReturn(Optional.of(user));
+    void updateUserWhenUserExistAndPatchValidThenReturnUser() {
+        long userId = 0L;
+        Mockito.when(userRepository.findById(Mockito.anyLong()))
+                .thenReturn(Optional.of(user));
+        Mockito.when(userRepository.save(Mockito.any()))
+                .thenReturn(user);
 
-        UserRefundDto usersDto = userService.edit(id, userDto);
+        User result = userService.updateUser(userId, user);
 
-        assertEquals(usersDto.getId(), 1);
-        assertEquals(usersDto.getEmail(), "34@mail.ru");
-        assertEquals(usersDto.getName(), "Maksim2");
+        assertThat(result).isEqualTo(user);
     }
 
     @Test
-    void edit_nameUser_thenNotObjectException() {
-        long id = 1L;
-        UserDto userDto = new UserDto(null, "Maksim2");
-        when(repository.findById(id)).thenReturn(Optional.empty());
+    void deleteUserWhenUserExistsThenOk() {
+        long userId = 0L;
 
-        assertThrows(ObjectNotFoundException.class, () -> userService.edit(id, userDto),
-                "Пользователь не найден");
-    }
-
-    @Test
-    void delete_NotReturn() {
-        Long id = 1L;
-
-        userService.delete(id);
-
-        verify(repository).deleteById(id);
+        userService.deleteUser(userId);
     }
 }

@@ -1,40 +1,34 @@
 package ru.practicum.shareit.item;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import org.springframework.stereotype.Component;
+import ru.practicum.shareit.item.dto.CommentCreateDto;
 import ru.practicum.shareit.item.dto.CommentDto;
-import ru.practicum.shareit.item.dto.CommentRefundDto;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Component
 public class CommentMapper {
 
-    public static Comment toComment(User user, Item item, CommentDto commentDto) {
-        return new Comment(
-                null,
-                commentDto.getText(),
-                item,
-                user,
-                LocalDateTime.now()
-        );
+    public Comment toComment(CommentCreateDto commentCreateDto, User author, Item item) {
+        Comment comment = new Comment();
+        comment.setAuthor(author);
+        comment.setItem(item);
+        comment.setText(commentCreateDto.getText());
+        comment.setCreated(LocalDateTime.now());
+        return comment;
     }
 
-    public static CommentRefundDto toCommentDto(Comment comment) {
-        return new CommentRefundDto(
-                comment.getId(),
-                comment.getText(),
-                comment.getAuthor().getName(),
-                comment.getCreated()
-        );
+    public CommentDto toCommentDto(Comment comment) {
+        User author = comment.getAuthor();
+        CommentDto commentDto = new CommentDto();
+        commentDto.setId(comment.getId());
+        commentDto.setAuthorName(author.getName());
+        commentDto.setText(comment.getText());
+        commentDto.setCreated(comment.getCreated());
+        return commentDto;
     }
 
-    public static List<CommentRefundDto> toCommentsDto(List<Comment> comments) {
-        return comments.stream().map(CommentMapper::toCommentDto).collect(Collectors.toList());
-    }
 }

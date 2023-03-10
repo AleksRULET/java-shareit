@@ -1,27 +1,25 @@
 package ru.practicum.shareit.booking.dto;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ru.practicum.shareit.Create;
-import ru.practicum.shareit.booking.validation.DateStartBeforeEnd;
+import lombok.ToString;
+import ru.practicum.shareit.booking.model.Status;
+import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.user.dto.UserDto;
 
-import javax.validation.constraints.Future;
-import javax.validation.constraints.FutureOrPresent;
-import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
-@Setter
 @Getter
-@AllArgsConstructor
-@NoArgsConstructor
-@DateStartBeforeEnd(groups = {Create.class})
+@Setter
+@ToString
 public class BookingDto {
-    @FutureOrPresent(groups = {Create.class})
+    private Long id;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime start;
-    @Future(groups = {Create.class})
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime end;
-    @NotNull(groups = {Create.class})
-    private Long itemId;
+    private ItemDto item;
+    private UserDto booker;
+    private Status status;
 }

@@ -6,5 +6,14 @@ public enum State {
     PAST,
     FUTURE,
     WAITING,
-    REJECTED
+    REJECTED;
+
+    public static State of(String str) {
+        for (State state : values()) {
+            if (state.name().equals(str)) {
+                return state;
+            }
+        }
+        return null;
+    }
 }

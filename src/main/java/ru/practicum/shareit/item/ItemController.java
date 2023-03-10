@@ -1,85 +1,71 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.Create;
-import ru.practicum.shareit.Update;
+import ru.practicum.shareit.item.dto.CommentCreateDto;
 import ru.practicum.shareit.item.dto.CommentDto;
-import ru.practicum.shareit.item.dto.CommentRefundDto;
-import ru.practicum.shareit.item.dto.ItemBookingDto;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemRefundDto;
+import ru.practicum.shareit.item.dto.ItemPatchDto;
 import ru.practicum.shareit.item.service.ItemService;
-import ru.practicum.shareit.booking.validation.ValidPage;
+import ru.practicum.shareit.utils.ControllerConstants;
 
+import javax.validation.Valid;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import java.util.List;
 
-@Validated
+@Slf4j
 @RestController
-@RequestMapping("/items")
 @RequiredArgsConstructor
+@RequestMapping("/items")
+@Validated
 public class ItemController {
 
-    private final ItemService service;
+    private final ItemService itemService;
 
     @PostMapping
-    public ItemRefundDto add(
-            @RequestHeader("X-Sharer-User-Id") long userId,
-            @Validated({Create.class}) @RequestBody ItemDto itemDto
-    ) {
-        return service.add(userId, itemDto);
+    public ItemDto create(@RequestHeader(ControllerConstants.USER_ID_HEADER) long userId,
+                          @Valid @RequestBody ItemDto itemDto) {
+        log.info("POST : create item {}", itemDto);
+        return itemService.createItem(userId, itemDto);
     }
 
-
     @PatchMapping("/{itemId}")
-    public ItemRefundDto edit(
-            @RequestHeader("X-Sharer-User-Id") long userId,
-            @PathVariable long itemId,
-            @Validated({Update.class}) @RequestBody ItemDto itemDto
-    ) {
-        return service.edit(userId, itemId, itemDto);
+    public ItemDto update(@RequestHeader(ControllerConstants.USER_ID_HEADER) long userId, @PathVariable long itemId,
+                          @Valid @RequestBody ItemPatchDto itemPatchDto) {
+        log.info("PATCH : update item id : {} body : {}", itemId, itemPatchDto);
+        return itemService.updateItem(userId, itemId, itemPatchDto);
     }
 
     @GetMapping("/{itemId}")
-    public ItemBookingDto findById(
-            @RequestHeader("X-Sharer-User-Id") long userId,
-            @PathVariable long itemId
-    ) {
-        return service.findById(userId, itemId);
+    public ItemDto find(@RequestHeader(ControllerConstants.USER_ID_HEADER) long userId,
+                        @PathVariable long itemId) {
+        log.info("GET : get item id : {}", itemId);
+        return itemService.getItem(userId, itemId);
     }
 
     @GetMapping
-    public List<ItemBookingDto> findAll(
-            @RequestHeader("X-Sharer-User-Id") long userId,
-            @RequestParam(value = "from", defaultValue = "0") @PositiveOrZero int from,
-            @RequestParam(value = "size", defaultValue = "10") @Positive int size
-    ) {
-        int page = ValidPage.page(from, size);
-        return service.findAllForUser(page, size, userId);
+    public List<ItemDto> findAllForUser(@RequestHeader(ControllerConstants.USER_ID_HEADER) long userId,
+                                        @PositiveOrZero @RequestParam(defaultValue = "0") int from,
+                                        @Positive @RequestParam(defaultValue = "5") int size) {
+        log.info("GET : get items for user id : {}", userId);
+        return itemService.getItemsForUser(userId, from, size);
     }
 
     @GetMapping("/search")
-    public List<ItemRefundDto> search(
-            @RequestParam String text,
-            @RequestParam(value = "from", defaultValue = "0") @PositiveOrZero int from,
-            @RequestParam(value = "size", defaultValue = "10") @Positive int size
-    ) {
-        if (text.isBlank()) {
-            return List.of();
-        }
-        int page = ValidPage.page(from, size);
-        return service.search(text, page, size);
+    public List<ItemDto> search(@RequestParam String text,
+                                @PositiveOrZero @RequestParam(defaultValue = "0") int from,
+                                @Positive @RequestParam(defaultValue = "5") int size) {
+        log.info("GET : search items by text : {}", text);
+        return itemService.searchItems(text, from, size);
     }
 
     @PostMapping("/{itemId}/comment")
-    public CommentRefundDto addComment(
-            @RequestHeader("X-Sharer-User-Id") long userId,
-            @Validated({Create.class}) @RequestBody CommentDto commentDto,
-            @PathVariable Long itemId
-    ) {
-        return service.addComment(userId, itemId, commentDto);
+    public CommentDto addComment(@RequestHeader(ControllerConstants.USER_ID_HEADER) long userId,
+                                 @PathVariable long itemId, @Valid @RequestBody CommentCreateDto commentCreateDto) {
+        log.info("POST : add comment : {} to item : {}", commentCreateDto, itemId);
+        return itemService.addComment(userId, itemId, commentCreateDto);
     }
 }
