@@ -1,4 +1,4 @@
-package ru.practicum.shareit.excepсtion;
+package ru.practicum.shareit.exception;
 
 public class NotBookingException extends RuntimeException {
     public NotBookingException(String message) {

@@ -1,6 +1,6 @@
 package ru.practicum.shareit.booking.validation;
 
-import ru.practicum.shareit.excepсtion.InvalidValueException;
+import ru.practicum.shareit.exception.InvalidValueException;
 
 public class ValidPage {
     public static Integer page(Integer from, Integer size) {

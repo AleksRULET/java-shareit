@@ -5,7 +5,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.excepсtion.NotObjectException;
+import ru.practicum.shareit.exception.NotObjectException;
 import ru.practicum.shareit.item.dao.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.RequestMapper;

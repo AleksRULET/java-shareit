@@ -11,7 +11,7 @@ import ru.practicum.shareit.booking.dto.BookingItemDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.State;
 import ru.practicum.shareit.booking.model.Status;
-import ru.practicum.shareit.excepсtion.*;
+import ru.practicum.shareit.exception.*;
 import ru.practicum.shareit.item.dao.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.dao.UserRepository;

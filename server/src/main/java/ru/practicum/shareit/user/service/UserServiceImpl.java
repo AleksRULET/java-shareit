@@ -3,7 +3,7 @@ package ru.practicum.shareit.user.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.excepсtion.NotObjectException;
+import ru.practicum.shareit.exception.NotObjectException;
 import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.dto.UserDto;
