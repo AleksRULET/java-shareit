@@ -4,740 +4,415 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import ru.practicum.shareit.booking.dao.BookingRepository;
+import org.springframework.data.domain.Pageable;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.booking.model.Status;
-import ru.practicum.shareit.item.dao.CommentRepository;
-import ru.practicum.shareit.item.dto.CommentDto;
-import ru.practicum.shareit.item.dto.CommentRefundDto;
-import ru.practicum.shareit.item.model.Comment;
-import ru.practicum.shareit.excepction.CommentException;
-import ru.practicum.shareit.excepction.ObjectNotFoundException;
-import ru.practicum.shareit.excepction.NotOwnerException;
-import ru.practicum.shareit.item.dao.ItemRepository;
-import ru.practicum.shareit.item.dto.ItemBookingDto;
-import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemRefundDto;
+import ru.practicum.shareit.booking.model.dto.BookingItemDto;
+import ru.practicum.shareit.booking.model.dto.BookingMapper;
+import ru.practicum.shareit.booking.storage.BookingRepository;
+import ru.practicum.shareit.error.exceptions.EntityNotFoundException;
+import ru.practicum.shareit.error.exceptions.PermissionException;
+import ru.practicum.shareit.error.exceptions.UserRestrictionException;
+import ru.practicum.shareit.item.comment.model.Comment;
+import ru.practicum.shareit.item.comment.model.dto.CommentCreateDto;
+import ru.practicum.shareit.item.comment.model.dto.CommentDto;
+import ru.practicum.shareit.item.comment.model.dto.CommentMapper;
+import ru.practicum.shareit.item.comment.storage.CommentRepository;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.request.dao.RequestRepository;
+import ru.practicum.shareit.item.model.dto.ItemDto;
+import ru.practicum.shareit.item.model.dto.ItemPatchDto;
+import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
-import ru.practicum.shareit.user.dao.UserRepository;
+import ru.practicum.shareit.request.storage.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class ItemServiceImplTest {
 
     @Mock
-    ItemRepository itemDao;
+    private ItemRepository itemRepository;
+
     @Mock
-    UserRepository userDao;
+    private BookingRepository bookingRepository;
+
     @Mock
-    CommentRepository commentDao;
+    private CommentRepository commentRepository;
+
     @Mock
-    BookingRepository bookingDao;
+    private BookingMapper bookingMapper;
+
     @Mock
-    RequestRepository requestDao;
+    private CommentMapper commentMapper;
+
+    @Mock
+    private UserService userService;
+
+    @Mock
+    private ItemRequestRepository itemRequestRepository;
+
     @InjectMocks
-    ItemServiceImpl itemService;
+    private ItemServiceImpl itemService;
 
-    // метод add
     @Test
-    void add_whenUserFound_AndRequestNotFound_thenReturnItemWithoutRequest() {
-        long id = 1L;
-        ItemDto itemDto = new ItemDto(
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                null
-        );
-        User user = new User(id, "23@mail.ru", "Jon");
-        Item item = new Item(
-                1L,
-                user,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                null
-        );
+    void createItemWhenUserAndItemDtoValidThenReturnItemDto() {
+        long userId = 0L;
+        long requestId = 1L;
+        User owner = new User();
+        ItemDto itemDto = new ItemDto();
+        itemDto.setRequestId(requestId);
+        ItemRequest itemRequest = new ItemRequest();
+        String name = "name";
+        String description = "description";
+        boolean available = true;
+        Item item = new Item();
+        item.setName(name);
+        item.setDescription(description);
+        item.setAvailable(available);
+        ItemDto expectedItemDto = new ItemDto();
+        expectedItemDto.setName(name);
+        expectedItemDto.setDescription(description);
+        expectedItemDto.setAvailable(available);
+        Mockito.when(userService.getUser(userId))
+                .thenReturn(owner);
+        Mockito.when(itemRequestRepository.findById(requestId))
+                .thenReturn(Optional.of(itemRequest));
+        Mockito.when(itemRepository.save(Mockito.any()))
+                .thenReturn(item);
 
-        when(userDao.findById(anyLong())).thenReturn(Optional.of(user));
-        when(itemDao.save(any())).thenReturn(item);
+        ItemDto itemDtoReturned = itemService.createItem(userId, itemDto);
 
-        ItemRefundDto itemRefundDto = itemService.add(id, itemDto);
-
-        assertEquals(itemRefundDto.getId(), 1L);
-        assertEquals(itemRefundDto.getName(), "Ручной рубанок");
-        assertEquals(itemRefundDto.getDescription(),
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм");
-        assertNull(itemRefundDto.getRequestId());
-
-        verify(userDao).findById(anyLong());
-        verify(requestDao, never()).findById(anyLong());
-        verify(itemDao).save(any());
+        assertThat(itemDtoReturned).isEqualTo(expectedItemDto);
     }
 
     @Test
-    void add_whenUserFound_AndRequestFound_thenReturnItemWithRequest() {
-        long id = 1L;
-        User user = new User(id, "23@mail.ru", "Jon");
-        ItemRequest request = new ItemRequest(
-                id,
-                "нужен рубанок по дереву",
-                user,
-                LocalDateTime.now().minusDays(1)
-        );
-        ItemDto itemDto = new ItemDto(
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                id
-        );
-        Item item = new Item(
-                1L,
-                user,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                request
-        );
+    void createItemWhenRequestNotExistThenInterrupt() {
+        long userId = 0L;
+        long requestId = 1L;
+        User owner = new User();
+        ItemDto itemDto = new ItemDto();
+        itemDto.setRequestId(requestId);
+        Mockito.when(userService.getUser(userId))
+                .thenReturn(owner);
+        Mockito.when(itemRequestRepository.findById(requestId))
+                .thenReturn(Optional.empty());
 
-        when(userDao.findById(anyLong())).thenReturn(Optional.of(user));
-        when(itemDao.save(any())).thenReturn(item);
-        when(requestDao.findById(anyLong())).thenReturn(Optional.of(request));
+        assertThrows(NoSuchElementException.class,
+                () -> itemService.createItem(userId, itemDto));
 
-        ItemRefundDto itemRefundDto = itemService.add(id, itemDto);
-
-        assertEquals(itemRefundDto.getId(), 1L);
-        assertEquals(itemRefundDto.getName(), "Ручной рубанок");
-        assertEquals(itemRefundDto.getDescription(),
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм");
-        assertEquals(itemRefundDto.getRequestId(), 1);
-
-        verify(userDao).findById(anyLong());
-        verify(requestDao).findById(anyLong());
-        verify(itemDao).save(any());
+        Mockito.verify(itemRepository, Mockito.never()).save(Mockito.any());
     }
 
     @Test
-    void add_whenUserNotData_thenReturnNotObjectException() {
-        long id = 1L;
-        ItemDto itemDto = new ItemDto(
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируеться от 0мм до 3мм",
-                true,
-                id
-        );
+    void createItemWhenItemDtoWithoutRequestThenReturnItemDto() {
+        long userId = 0L;
+        User owner = new User();
+        ItemDto itemDto = new ItemDto();
+        String name = "name";
+        String description = "description";
+        boolean available = true;
+        Item item = new Item();
+        item.setName(name);
+        item.setDescription(description);
+        item.setAvailable(available);
+        ItemDto expectedItemDto = new ItemDto();
+        expectedItemDto.setName(name);
+        expectedItemDto.setDescription(description);
+        expectedItemDto.setAvailable(available);
+        Mockito.when(userService.getUser(userId))
+                .thenReturn(owner);
+        Mockito.when(itemRepository.save(Mockito.any()))
+                .thenReturn(item);
 
-        when(userDao.findById(anyLong())).thenReturn(Optional.empty());
+        ItemDto itemDtoReturned = itemService.createItem(userId, itemDto);
 
-        assertThrows(ObjectNotFoundException.class, () -> itemService.add(id, itemDto), "нет пользователя");
-
-        verify(userDao).findById(anyLong());
-        verify(requestDao, never()).findById(anyLong());
-        verify(itemDao, never()).save(any());
+        assertThat(itemDtoReturned).isEqualTo(expectedItemDto);
     }
 
     @Test
-    void add_whenUserFound_AndRequestNotData_thenReturnNotObjectException() {
-        long id = 1L;
-        User user = new User(id, "23@mail.ru", "Jon");
-        ItemDto itemDto = new ItemDto(
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируеться от 0мм до 3мм",
-                true,
-                id
-        );
-
-        when(userDao.findById(anyLong())).thenReturn(Optional.of(user));
-        when(requestDao.findById(anyLong())).thenReturn(Optional.empty());
-
-        assertThrows(ObjectNotFoundException.class, () -> itemService.add(id, itemDto), "нет данного запроса");
-
-        verify(userDao).findById(anyLong());
-        verify(requestDao).findById(anyLong());
-        verify(itemDao, never()).save(any());
-    }
-
-    // метод edit
-    @Test
-    void edit_whenOwnerFound_thenReturnItem() {
-        long userId = 1L;
-        long id = 1L;
-        User user = new User(id, "23@mail.ru", "Jon");
-        ItemRequest request = new ItemRequest(
-                id,
-                "нужен рубанок по дереву",
-                user,
-                LocalDateTime.now().minusDays(1)
-        );
-        ItemDto itemDto = new ItemDto(
-                "Ручной рубанок 'TurboM'",
-                "Рубанок для работы по дереву",
-                false,
-                2L
-        );
-        Item item = new Item(
-                1L,
-                user,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                request
-        );
-
-        when(itemDao.findById(anyLong())).thenReturn(Optional.of(item));
-        when(userDao.findById(anyLong())).thenReturn(Optional.of(user));
-
-        ItemRefundDto itemRefundDto = itemService.edit(userId, id, itemDto);
-
-        assertEquals(itemRefundDto.getId(), 1L);
-        assertEquals(itemRefundDto.getName(), "Ручной рубанок 'TurboM'");
-        assertEquals(itemRefundDto.getDescription(), "Рубанок для работы по дереву");
-        assertEquals(itemRefundDto.getAvailable(), false);
-        assertEquals(itemRefundDto.getRequestId(), 1);
-
-        verify(userDao).findById(anyLong());
-        verify(itemDao).findById(anyLong());
-    }
-
-    @Test
-    void edit_whenNotOwnerFound_thenReturnNotOwnerException() {
-        long userId = 2L;
-        long id = 1L;
-        User user = new User(id, "23@mail.ru", "Jon");
-        ItemRequest request = new ItemRequest(
-                id,
-                "нужен рубанок по дереву",
-                user,
-                LocalDateTime.now().minusDays(1)
-        );
-        ItemDto itemDto = new ItemDto(
-                "Ручной рубанок 'TurboM'",
-                "Рубанок для работы по дереву",
-                true,
-                id
-        );
-        Item item = new Item(
-                1L,
-                user,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                request
-        );
-
-        when(itemDao.findById(anyLong())).thenReturn(Optional.of(item));
-
-        assertThrows(NotOwnerException.class, () -> itemService.edit(userId, id, itemDto),
-                "Вы не явдяетесь владельцем записи");
-
-        verify(userDao, never()).findById(anyLong());
-        verify(itemDao).findById(anyLong());
-
-    }
-
-    @Test
-    void edit_whenNotUserData_thenNotObjectException() {
-        long userId = 1L;
-        long id = 1L;
-        User user = new User(id, "23@mail.ru", "Jon");
-        ItemRequest request = new ItemRequest(
-                id,
-                "нужен рубанок по дереву",
-                user,
-                LocalDateTime.now().minusDays(1)
-        );
-        ItemDto itemDto = new ItemDto(
-                "Ручной рубанок 'TurboM'",
-                "Рубанок для работы по дереву",
-                true,
-                id
-        );
-        Item item = new Item(
-                1L,
-                user,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                request
-        );
-
-        when(itemDao.findById(anyLong())).thenReturn(Optional.of(item));
-        when(userDao.findById(anyLong())).thenReturn(Optional.empty());
-
-        assertThrows(ObjectNotFoundException.class, () -> itemService.edit(userId, id, itemDto),
-                "нет пользователя");
-
-        verify(userDao).findById(anyLong());
-        verify(itemDao).findById(anyLong());
-
-    }
-
-    @Test
-    void edit_whenNotItemData_thenNotObjectException() {
-        long userId = 1L;
-        long id = 1L;
-        ItemDto itemDto = new ItemDto(
-                "Ручной рубанок 'TurboM'",
-                "Рубанок для работы по дереву",
-                true,
-                id
-        );
-
-        when(itemDao.findById(anyLong())).thenReturn(Optional.empty());
-
-        assertThrows(ObjectNotFoundException.class, () -> itemService.edit(userId, id, itemDto), "нет записи");
-
-        verify(userDao, never()).findById(anyLong());
-        verify(itemDao).findById(anyLong());
-
-    }
-
-    // метод findById
-    @Test
-    void findById_whenItemWithAllDataFound_thenReturnItem() {
-        long userId = 1L;
+    void updateItemWhenUserAndItemValidThenReturnItemDto() {
+        long userId = 0L;
         long itemId = 1L;
-        long id1 = 1L;
-        long id2 = 2L;
-        long id3 = 2L;
-        User user1 = new User(id1, "23@mail.ru", "Jon");
-        User user2 = new User(id2, "24@mail.ru", "Bob");
-        User user3 = new User(id3, "25@mail.ru", "Sveta");
-        ItemRequest request = new ItemRequest(
-                id1,
-                "нужен рубанок по дереву",
-                user1,
-                LocalDateTime.now().minusDays(1)
-        );
-        Item item = new Item(
-                id1,
-                user3,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                request
-        );
-        List<Booking> bookings = new ArrayList<>();
-        Booking booking1 = new Booking(
-                id1,
-                LocalDateTime.now().minusDays(2),
-                LocalDateTime.now().minusDays(1),
-                item,
-                user1,
-                Status.APPROVED
-        );
-        Booking booking2 = new Booking(
-                id2,
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(3),
-                item,
-                user2,
-                Status.APPROVED
-        );
-        bookings.add(booking1);
-        bookings.add(booking2);
-        List<Comment> comments = new ArrayList<>();
-        Comment comment1 = new Comment(
-                id1,
-                "инструмент работает на 4, при долгой работе съезжает лезвие",
-                item,
-                user1,
-                LocalDateTime.now().minusHours(4)
-        );
-        comments.add(comment1);
-        when(userDao.findById(userId)).thenReturn(Optional.of(user1));
-        when(bookingDao.findItemByOwner(user1, itemId, Status.APPROVED)).thenReturn(bookings);
-        when(commentDao.findByItem_Id(itemId)).thenReturn(comments);
-        when(itemDao.findById(itemId)).thenReturn(Optional.of(item));
+        User owner = new User();
+        owner.setId(userId);
+        String patchName = "patch name";
+        ItemPatchDto itemPatchDto = new ItemPatchDto();
+        itemPatchDto.setName(patchName);
+        Item item = new Item();
+        item.setOwner(owner);
+        String name = "name";
+        String description = "description";
+        boolean available = true;
+        Item patchedItem = new Item();
+        patchedItem.setName(name);
+        patchedItem.setDescription(description);
+        patchedItem.setAvailable(available);
+        ItemDto expectedItemDto = new ItemDto();
+        expectedItemDto.setName(name);
+        expectedItemDto.setDescription(description);
+        expectedItemDto.setAvailable(available);
+        Mockito.when(itemRepository.findById(itemId))
+                .thenReturn(Optional.of(item));
+        Mockito.when(itemRepository.save(Mockito.any()))
+                .thenReturn(patchedItem);
 
-        ItemBookingDto itemBookingDto = itemService.findById(userId, itemId);
+        ItemDto itemDtoReturned = itemService.updateItem(userId, itemId, itemPatchDto);
 
-        assertEquals(itemBookingDto.getId(), 1L);
-        assertEquals(itemBookingDto.getName(), "Ручной рубанок");
-        assertEquals(itemBookingDto.getDescription(),
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм");
-        assertTrue(itemBookingDto.getAvailable());
-        assertEquals(itemBookingDto.getLastBooking().getId(), 1);
-        assertEquals(itemBookingDto.getNextBooking().getId(), 2);
-        assertEquals(itemBookingDto.getComments().size(), 1);
-
-        verify(bookingDao).findItemByOwner(user1, itemId, Status.APPROVED);
-        verify(commentDao).findByItem_Id(itemId);
-        verify(itemDao).findById(itemId);
+        assertThat(itemDtoReturned).isEqualTo(expectedItemDto);
     }
 
     @Test
-    void findById_whenItemWithoutDataFound_thenReturnItem() {
-        long userId = 1L;
+    void updateItemWhenItemNotExistsThenInterrupt() {
+        long userId = 0L;
         long itemId = 1L;
-        long id1 = 1L;
-        long id3 = 2L;
-        User user1 = new User(userId, "25@mail.ru", "Sveta");
-        User user3 = new User(id3, "25@mail.ru", "Sveta");
-        Item item = new Item(
-                id1,
-                user3,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                null
-        );
-        when(userDao.findById(userId)).thenReturn(Optional.of(user1));
-        when(bookingDao.findItemByOwner(user1, itemId, Status.APPROVED)).thenReturn(List.of());
-        when(commentDao.findByItem_Id(itemId)).thenReturn(List.of());
-        when(itemDao.findById(itemId)).thenReturn(Optional.of(item));
+        ItemPatchDto itemPatchDto = new ItemPatchDto();
+        Mockito.when(itemRepository.findById(itemId))
+                .thenReturn(Optional.empty());
 
-        ItemBookingDto itemBookingDto = itemService.findById(userId, itemId);
+        assertThrows(EntityNotFoundException.class,
+                () -> itemService.updateItem(userId, itemId, itemPatchDto));
 
-        assertEquals(itemBookingDto.getId(), 1L);
-        assertEquals(itemBookingDto.getName(), "Ручной рубанок");
-        assertEquals(itemBookingDto.getDescription(),
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм");
-        assertTrue(itemBookingDto.getAvailable());
-        assertNull(itemBookingDto.getLastBooking());
-        assertNull(itemBookingDto.getNextBooking());
-        assertTrue(itemBookingDto.getComments().isEmpty());
-
-        verify(bookingDao).findItemByOwner(user1, itemId, Status.APPROVED);
-        verify(commentDao).findByItem_Id(itemId);
-        verify(itemDao).findById(itemId);
+        Mockito.verify(itemRepository, Mockito.never()).save(Mockito.any());
     }
 
     @Test
-    void findById_whenNotItemData_thenReturnNotObjectException() {
-        long userId = 1L;
+    void updateItemWhenOwnerInvalidThenInterrupt() {
+        long userId = 0L;
         long itemId = 1L;
-        User user1 = new User(userId, "25@mail.ru", "Sveta");
-        when(userDao.findById(userId)).thenReturn(Optional.of(user1));
-        when(bookingDao.findItemByOwner(user1, itemId, Status.APPROVED)).thenReturn(List.of());
-        when(commentDao.findByItem_Id(itemId)).thenReturn(List.of());
-        when(itemDao.findById(itemId)).thenReturn(Optional.empty());
+        ItemPatchDto itemPatchDto = new ItemPatchDto();
+        User owner = new User();
+        owner.setId(2L);
+        Item item = new Item();
+        item.setOwner(owner);
+        Mockito.when(itemRepository.findById(itemId))
+                .thenReturn(Optional.of(item));
 
-        assertThrows(ObjectNotFoundException.class, () -> itemService.findById(userId, itemId), "нет записи");
+        assertThrows(PermissionException.class,
+                () -> itemService.updateItem(userId, itemId, itemPatchDto));
 
-        verify(bookingDao).findItemByOwner(user1, itemId, Status.APPROVED);
-        verify(commentDao).findByItem_Id(itemId);
-        verify(itemDao).findById(itemId);
-    }
-
-    // метод findAllForUser
-    @Test
-    void findAllForUser_whenItemWithAllDataFound_ReturnItems() {
-        long userId = 3L;
-        long id1 = 1L;
-        long id2 = 2L;
-        int page = 0;
-        int size = 3;
-        User user1 = new User(id1, "23@mail.ru", "Jon");
-        User user2 = new User(id2, "24@mail.ru", "Bob");
-        User user3 = new User(userId, "25@mail.ru", "Sveta");
-        ItemRequest request = new ItemRequest(
-                id1,
-                "нужен рубанок по дереву",
-                user1,
-                LocalDateTime.now().minusDays(1)
-        );
-        List<Item> items = new ArrayList<>();
-        Item item = new Item(
-                id1,
-                user3,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                request
-        );
-        items.add(item);
-        PageImpl<Item> itemsPage = new PageImpl<>(items);
-        List<Booking> bookings = new ArrayList<>();
-        Booking booking1 = new Booking(
-                id1,
-                LocalDateTime.now().minusDays(2),
-                LocalDateTime.now().minusDays(1),
-                item,
-                user1,
-                Status.APPROVED
-        );
-        Booking booking2 = new Booking(
-                id2,
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(3),
-                item,
-                user2,
-                Status.APPROVED
-        );
-        bookings.add(booking1);
-        bookings.add(booking2);
-        List<Comment> comments = new ArrayList<>();
-        Comment comment1 = new Comment(
-                id1,
-                "инструмент работает на 4, при долгой работе съезжает лезвие",
-                item,
-                user1,
-                LocalDateTime.now().minusHours(4)
-        );
-        comments.add(comment1);
-        when(userDao.findById(userId)).thenReturn(Optional.of(user3));
-        when(itemDao.findAllForUser(user3, PageRequest.of(page, size))).thenReturn(itemsPage);
-        when(commentDao.findByItemInOrderByCreatedDesc(any())).thenReturn(comments);
-        when(bookingDao.findAllItemsByOwner(user3, Status.APPROVED)).thenReturn(bookings);
-
-        List<ItemBookingDto> itemsBookingDto = itemService.findAllForUser(page, size, userId);
-        ItemBookingDto itemBookingDto = itemsBookingDto.get(0);
-
-        assertEquals(itemBookingDto.getId(), 1L);
-        assertEquals(itemBookingDto.getName(), "Ручной рубанок");
-        assertEquals(itemBookingDto.getDescription(),
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм");
-        assertTrue(itemBookingDto.getAvailable());
-        assertEquals(itemBookingDto.getLastBooking().getId(), 1);
-        assertEquals(itemBookingDto.getNextBooking().getId(), 2);
-        assertEquals(itemBookingDto.getComments().size(), 1);
-
-        verify(itemDao).findAllForUser(user3, PageRequest.of(page, size));
-        verify(commentDao).findByItemInOrderByCreatedDesc(any());
-        verify(bookingDao).findAllItemsByOwner(user3, Status.APPROVED);
+        Mockito.verify(itemRepository, Mockito.never()).save(Mockito.any());
     }
 
     @Test
-    void findAllForUser_whenItemWithoutDataFound_ReturnItems() {
-        long userId = 3L;
-        long id1 = 1L;
-        long id3 = 3L;
-        int page = 0;
-        int size = 3;
-        User user3 = new User(id3, "25@mail.ru", "Sveta");
-        List<Item> items = new ArrayList<>();
-        Item item = new Item(
-                id1,
-                user3,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                null
-        );
-        items.add(item);
-        PageImpl<Item> itemsPage = new PageImpl<>(items);
-        when(userDao.findById(userId)).thenReturn(Optional.of(user3));
-        when(itemDao.findAllForUser(user3, PageRequest.of(page, size))).thenReturn(itemsPage);
-        when(commentDao.findByItemInOrderByCreatedDesc(any())).thenReturn(List.of());
-        when(bookingDao.findAllItemsByOwner(user3, Status.APPROVED)).thenReturn(List.of());
-
-        List<ItemBookingDto> itemsBookingDto = itemService.findAllForUser(page, size, userId);
-        ItemBookingDto itemBookingDto = itemsBookingDto.get(0);
-
-        assertEquals(itemBookingDto.getId(), 1L);
-        assertEquals(itemBookingDto.getName(), "Ручной рубанок");
-        assertEquals(itemBookingDto.getDescription(),
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм");
-        assertTrue(itemBookingDto.getAvailable());
-        assertNull(itemBookingDto.getLastBooking());
-        assertNull(itemBookingDto.getNextBooking());
-        assertTrue(itemBookingDto.getComments().isEmpty());
-
-        verify(itemDao).findAllForUser(user3, PageRequest.of(page, size));
-        verify(commentDao).findByItemInOrderByCreatedDesc(any());
-        verify(bookingDao).findAllItemsByOwner(user3, Status.APPROVED);
-    }
-
-    @Test
-    void findAllForUser_whenItemNotData_ReturnEmpty() {
-        long userId = 3L;
-        int page = 0;
-        int size = 3;
-        User user3 = new User(userId, "25@mail.ru", "Sveta");
-        List<Item> items = new ArrayList<>();
-        PageImpl<Item> itemsPage = new PageImpl<>(items);
-        when(userDao.findById(userId)).thenReturn(Optional.of(user3));
-        when(itemDao.findAllForUser(user3, PageRequest.of(page, size))).thenReturn(itemsPage);
-        when(commentDao.findByItemInOrderByCreatedDesc(any())).thenReturn(List.of());
-        when(bookingDao.findAllItemsByOwner(user3, Status.APPROVED)).thenReturn(List.of());
-
-        List<ItemBookingDto> itemsBookingDto = itemService.findAllForUser(page, size, userId);
-
-        assertTrue(itemsBookingDto.isEmpty());
-
-        verify(itemDao).findAllForUser(user3, PageRequest.of(page, size));
-        verify(commentDao).findByItemInOrderByCreatedDesc(any());
-        verify(bookingDao).findAllItemsByOwner(user3, Status.APPROVED);
-    }
-
-    @Test
-    void search_ReturnItems() {
-        long id1 = 1L;
-        long id3 = 3L;
-        int page = 0;
-        int size = 3;
-        String text = "рубанок";
-        User user3 = new User(id3, "25@mail.ru", "Sveta");
-        List<Item> items = new ArrayList<>();
-        Item item = new Item(
-                id1,
-                user3,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                null
-        );
-        items.add(item);
-        PageImpl<Item> itemsPage = new PageImpl<>(items);
-        when(itemDao.search(text, PageRequest.of(page, size))).thenReturn(itemsPage);
-
-        List<ItemRefundDto> itemsRefundDto = itemService.search(text, page, size);
-        ItemRefundDto itemRefundDto = itemsRefundDto.get(0);
-
-        assertEquals(itemsRefundDto.size(), 1);
-        assertEquals(itemRefundDto.getId(), 1);
-
-        verify(itemDao).search(text, PageRequest.of(page, size));
-
-    }
-
-    @Test
-    void addComment_thenReturnComment() {
-        long userId = 1L;
-        Long itemId = 1L;
-        long id1 = 1L;
-        long id3 = 3L;
-        User user1 = new User(id1, "23@mail.ru", "Jon");
-        User user3 = new User(id3, "25@mail.ru", "Sveta");
-        ItemRequest request = new ItemRequest(
-                id1,
-                "нужен рубанок по дереву",
-                user1,
-                LocalDateTime.now().minusDays(1)
-        );
-        Item item = new Item(
-                itemId,
-                user3,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                request
-        );
-        List<Booking> bookings = new ArrayList<>();
-        Booking booking1 = new Booking(
-                id1,
-                LocalDateTime.now().minusDays(2),
-                LocalDateTime.now().minusDays(1),
-                item,
-                user1,
-                Status.APPROVED
-        );
-        bookings.add(booking1);
-        CommentDto commentDto = new CommentDto(null,
-                "инструмент работает на 4, при долгой работе съезжает лезвие");
+    void getItemWhenUserAndItemValidThenReturnItemDto() {
+        long userId = 0L;
+        long itemId = 1L;
+        User owner = new User();
+        owner.setId(userId);
+        Item item = new Item();
+        item.setId(itemId);
+        item.setOwner(owner);
+        Booking booking = new Booking();
         Comment comment = new Comment();
-        comment.setId(id1);
-        comment.setText("инструмент работает на 4, при долгой работе съезжает лезвие");
+        BookingItemDto bookingItemDto = new BookingItemDto();
+        CommentDto commentDto = new CommentDto();
+        Mockito.when(itemRepository.findById(itemId))
+                .thenReturn(Optional.of(item));
+        Mockito.when(bookingRepository.findFirstByItem_IdAndStatusInAndStartIsBefore(Mockito.anyLong(),
+                Mockito.anyList(), Mockito.any(), Mockito.any())).thenReturn(Optional.of(booking));
+        Mockito.when(bookingRepository.findFirstByItem_IdAndStatusInAndStartIsAfter(Mockito.anyLong(),
+                Mockito.anyList(), Mockito.any(), Mockito.any())).thenReturn(Optional.of(booking));
+        Mockito.when(commentRepository.findAllByItem_Id(Mockito.anyLong()))
+                .thenReturn(List.of(comment));
+        Mockito.when(bookingMapper.toBookingItemDto(Mockito.any()))
+                .thenReturn(bookingItemDto);
+        Mockito.when(commentMapper.toCommentDto(Mockito.any()))
+                .thenReturn(commentDto);
+
+        ItemDto itemDtoReturned = itemService.getItem(userId, itemId);
+
+        assertThat(itemDtoReturned.getLastBooking()).isEqualTo(bookingItemDto);
+        assertThat(itemDtoReturned.getNextBooking()).isEqualTo(bookingItemDto);
+        assertThat(itemDtoReturned.getComments()).isEqualTo(List.of(commentDto));
+    }
+
+    @Test
+    void getItemWhenUserAndOwnerNotEqualThenReturnItemDto() {
+        long userId = 0L;
+        long itemId = 1L;
+        User owner = new User();
+        owner.setId(2L);
+        Item item = new Item();
+        item.setId(itemId);
+        item.setOwner(owner);
+        Comment comment = new Comment();
+        CommentDto commentDto = new CommentDto();
+        Mockito.when(itemRepository.findById(itemId))
+                .thenReturn(Optional.of(item));
+        Mockito.when(commentRepository.findAllByItem_Id(Mockito.anyLong()))
+                .thenReturn(List.of(comment));
+        Mockito.when(commentMapper.toCommentDto(Mockito.any()))
+                .thenReturn(commentDto);
+
+        ItemDto itemDtoReturned = itemService.getItem(userId, itemId);
+
+        assertThat(itemDtoReturned.getComments()).isEqualTo(List.of(commentDto));
+    }
+
+    @Test
+    void getItemWhenItemNotExistThenInterrupt() {
+        long userId = 0L;
+        long itemId = 1L;
+        Mockito.when(itemRepository.findById(itemId))
+                .thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> itemService.getItem(userId, itemId));
+
+        Mockito.verify(commentRepository, Mockito.never()).findAllByItem_Id(Mockito.anyLong());
+    }
+
+    @Test
+    void getItemsForUserWhenUSerAndItemValidThenReturnItemDto() {
+        long userId = 0L;
+        long itemId = 1L;
+        long commentId = 2L;
+        long bookingId = 3L;
+        int from = 0;
+        int size = 1;
+        Item item = new Item();
+        item.setId(itemId);
+        Page<Item> pageItem = new PageImpl<>(List.of(item));
+        Booking booking = new Booking();
+        booking.setId(bookingId);
+        booking.setItem(item);
+        booking.setStart(LocalDateTime.now());
+        Comment comment = new Comment();
+        comment.setId(commentId);
         comment.setItem(item);
-        comment.setAuthor(user1);
-        comment.setCreated(LocalDateTime.now());
+        CommentDto commentDto = new CommentDto();
+        BookingItemDto bookingItemDto = new BookingItemDto();
 
-        when(userDao.findById(any())).thenReturn(Optional.of(user1));
-        when(itemDao.findById(any())).thenReturn(Optional.of(item));
-        when(bookingDao.findByBooker_IdAndItem_Id(user1, itemId, Status.APPROVED)).thenReturn(bookings);
-        when(commentDao.save(any())).thenReturn(comment);
+        Mockito.when(itemRepository.findByOwner_Id(Mockito.anyLong(), Mockito.any(Pageable.class)))
+                .thenReturn(pageItem);
+        Mockito.when(bookingRepository.findAllByItem_IdInAndStatusIn(Mockito.anyList(), Mockito.anyList()))
+                .thenReturn(List.of(booking));
+        Mockito.when(commentRepository.findAllByItem_IdIn(Mockito.anyList()))
+                .thenReturn(List.of(comment));
+        Mockito.when(commentMapper.toCommentDto(Mockito.any()))
+                .thenReturn(commentDto);
+        Mockito.when(bookingMapper.toBookingItemDto(Mockito.any()))
+                .thenReturn(bookingItemDto);
 
-        CommentRefundDto commentRefundDto = itemService.addComment(userId, itemId, commentDto);
+        List<ItemDto> itemDtoReturned = itemService.getItemsForUser(userId, from, size);
 
-        assertEquals(commentRefundDto.getId(), 1L);
-        assertEquals(commentRefundDto.getText(), "инструмент работает на 4, при долгой работе съезжает лезвие");
-        assertEquals(commentRefundDto.getAuthorName(), "Jon");
-
-        verify(userDao).findById(any());
-        verify(itemDao).findById(any());
-        verify(bookingDao).findByBooker_IdAndItem_Id(user1, itemId, Status.APPROVED);
-        verify(commentDao).save(any());
+        assertThat(itemDtoReturned).hasSize(1);
+        assertThat(itemDtoReturned.get(0).getLastBooking()).isEqualTo(bookingItemDto);
+        assertThat(itemDtoReturned.get(0).getNextBooking()).isNull();
+        assertThat(itemDtoReturned.get(0).getComments()).asList().hasSize(1);
     }
 
     @Test
-    void addComment_whenNotUserData_thenReturnNotObjectException() {
-        long userId = 1L;
+    void searchItemsWhenTextValidReturnItemDto() {
+        String text = "text";
+        int from = 0;
+        int size = 1;
+        long itemId = 0L;
+        Item item = new Item();
+        item.setId(itemId);
+        Page<Item> pageItem = new PageImpl<>(List.of(item));
+        Mockito.when(itemRepository.search(Mockito.anyString(), Mockito.any()))
+                .thenReturn(pageItem);
+
+        List<ItemDto> itemDtoReturned = itemService.searchItems(text, from, size);
+
+        assertThat(itemDtoReturned).hasSize(1);
+    }
+
+    @Test
+    void searchItemsWhenTextBlankReturnEmptyList() {
+        String text = "  ";
+        int from = 0;
+        int size = 1;
+
+        List<ItemDto> itemDtoReturned = itemService.searchItems(text, from, size);
+
+        assertThat(itemDtoReturned).isEmpty();
+    }
+
+    @Test
+    void addCommentWhenUSerItemAndCommentValidThenReturnCommentDto() {
+        long userId = 0L;
         long itemId = 1L;
-        User user1 = new User(userId, "25@mail.ru", "Sveta");
-        CommentDto commentDto = new CommentDto(null,
-                "инструмент работает на 4, при долгой работе съезжает лезвие");
+        User author = new User();
+        author.setId(userId);
+        Item item = new Item();
+        item.setId(itemId);
+        CommentCreateDto commentCreateDto = new CommentCreateDto();
+        Comment comment = new Comment();
+        Booking booking = new Booking();
+        CommentDto commentDto = new CommentDto();
+        Mockito.when(userService.getUser(userId))
+                .thenReturn(author);
+        Mockito.when(itemRepository.findById(itemId))
+                .thenReturn(Optional.of(item));
+        Mockito.when(commentMapper.toComment(Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(comment);
+        Mockito.when(bookingRepository.findAllByBooker_IdAndItem_IdAndStatusInAndEndIsBefore(Mockito.anyLong(),
+                        Mockito.anyLong(), Mockito.anyList(), Mockito.any()))
+                .thenReturn(List.of(booking));
+        Mockito.when(commentRepository.save(Mockito.any()))
+                .thenReturn(comment);
+        Mockito.when(commentMapper.toCommentDto(Mockito.any()))
+                .thenReturn(commentDto);
 
-        when(userDao.findById(any())).thenReturn(Optional.empty());
+        CommentDto commentDtoReturned = itemService.addComment(userId, itemId, commentCreateDto);
 
-        assertThrows(ObjectNotFoundException.class, () -> itemService.addComment(userId, itemId, commentDto),
-                "Пользователь не найден");
-
-        verify(userDao).findById(any());
-        verify(itemDao, never()).findById(any());
-        verify(bookingDao, never()).findByBooker_IdAndItem_Id(user1, itemId, Status.APPROVED);
-        verify(commentDao, never()).save(any());
+        assertThat(commentDtoReturned).isEqualTo(commentDto);
     }
 
     @Test
-    void addComment_whenNotItemData_thenReturnNotObjectException() {
-        long userId = 1L;
+    void addCommentWhenBookingNotExistThenInterrupt() {
+        long userId = 0L;
         long itemId = 1L;
-        long id1 = 1L;
-        User user1 = new User(id1, "23@mail.ru", "Jon");
-        CommentDto commentDto = new CommentDto(null,
-                "инструмент работает на 4, при долгой работе съезжает лезвие");
+        User author = new User();
+        author.setId(userId);
+        Item item = new Item();
+        item.setId(itemId);
+        CommentCreateDto commentCreateDto = new CommentCreateDto();
+        Comment comment = new Comment();
+        Mockito.when(userService.getUser(userId))
+                .thenReturn(author);
+        Mockito.when(itemRepository.findById(itemId))
+                .thenReturn(Optional.of(item));
+        Mockito.when(commentMapper.toComment(Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(comment);
+        Mockito.when(bookingRepository.findAllByBooker_IdAndItem_IdAndStatusInAndEndIsBefore(Mockito.anyLong(),
+                        Mockito.anyLong(), Mockito.anyList(), Mockito.any()))
+                .thenReturn(Collections.emptyList());
 
-        when(userDao.findById(any())).thenReturn(Optional.of(user1));
-        when(itemDao.findById(any())).thenReturn(Optional.empty());
+        assertThrows(UserRestrictionException.class, () -> itemService.addComment(userId, itemId, commentCreateDto));
 
-        assertThrows(ObjectNotFoundException.class, () -> itemService.addComment(userId, itemId, commentDto),
-                "вещь не найдена");
-
-        verify(userDao).findById(any());
-        verify(itemDao).findById(any());
-        verify(bookingDao, never()).findByBooker_IdAndItem_Id(user1, itemId, Status.APPROVED);
-        verify(commentDao, never()).save(any());
+        Mockito.verify(commentRepository, Mockito.never()).save(Mockito.any());
     }
 
     @Test
-    void addComment_NotBooking_thenReturnCommentException() {
-        long userId = 1L;
-        Long itemId = 1L;
-        long id1 = 1L;
-        long id3 = 3L;
-        User user1 = new User(id1, "23@mail.ru", "Jon");
-        User user3 = new User(id3, "25@mail.ru", "Sveta");
-        ItemRequest request = new ItemRequest(
-                id1,
-                "нужен рубанок по дереву",
-                user1,
-                LocalDateTime.now().minusDays(1)
-        );
-        Item item = new Item(
-                itemId,
-                user3,
-                "Ручной рубанок",
-                "Рубанок для работы по дереву, лезвие регулируется от 0мм до 3мм",
-                true,
-                request
-        );
-        CommentDto commentDto = new CommentDto(null,
-                "инструмент работает на 4, при долгой работе съезжает лезвие");
+    void addCommentWhenItemNotExistThenInterrupt() {
+        long userId = 0L;
+        long itemId = 1L;
+        User author = new User();
+        author.setId(userId);
+        CommentCreateDto commentCreateDto = new CommentCreateDto();
+        Mockito.when(userService.getUser(userId))
+                .thenReturn(author);
+        Mockito.when(itemRepository.findById(itemId))
+                .thenReturn(Optional.empty());
 
-        when(userDao.findById(any())).thenReturn(Optional.of(user1));
-        when(itemDao.findById(any())).thenReturn(Optional.of(item));
-        when(bookingDao.findByBooker_IdAndItem_Id(user1, itemId, Status.APPROVED)).thenReturn(List.of());
+        assertThrows(EntityNotFoundException.class,
+                () -> itemService.addComment(userId, itemId, commentCreateDto));
 
-        assertThrows(CommentException.class, () -> itemService.addComment(userId, itemId, commentDto),
-                "нет бронирование на вещь у пользователя");
-
-        verify(userDao).findById(any());
-        verify(itemDao).findById(any());
-        verify(bookingDao).findByBooker_IdAndItem_Id(user1, itemId, Status.APPROVED);
-        verify(commentDao, never()).save(any());
+        Mockito.verify(commentRepository, Mockito.never()).save(Mockito.any());
     }
 }
