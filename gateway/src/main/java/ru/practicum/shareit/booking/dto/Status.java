@@ -1,12 +1,16 @@
 package ru.practicum.shareit.booking.dto;
 
+import java.util.Optional;
+
 public enum Status {
-    WAITING,
-    //  новое бронирование, ожидает одобрения
-    APPROVED,
-    // бронирование подтверждено владельцем
-    REJECTED,
-    // бронирование отклонено владельцем
-    CANCELED
-    // бронирование отменено создателем
+    ALL, CURRENT, PAST, FUTURE, WAITING, REJECTED;
+
+    public static Optional<Status> of(String str) {
+        for (Status status : values()) {
+            if (status.name().equals(str)) {
+                return Optional.of(status);
+            }
+        }
+        return Optional.empty();
+    }
 }

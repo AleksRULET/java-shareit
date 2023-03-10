@@ -1,17 +1,32 @@
 package ru.practicum.shareit.request.dto;
 
-import lombok.*;
-import ru.practicum.shareit.Create;
-import ru.practicum.shareit.Update;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
+import java.time.LocalDateTime;
+import java.util.List;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
+@ToString
 public class ItemRequestDto {
-    @NotBlank(groups = {Create.class})
-    @Size(max = 200, groups = {Update.class, Create.class})
+    private Long id;
     private String description;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime created;
+    private List<ItemDto> items;
+
+    @Getter
+    @Setter
+    @ToString
+    public static class ItemDto {
+        private Long id;
+        private String name;
+        private Long ownerId;
+        private String description;
+        private Boolean available;
+        private Long requestId;
+    }
 }

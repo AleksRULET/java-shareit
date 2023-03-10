@@ -3,79 +3,64 @@ package ru.practicum.shareit.item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.item.dto.CommentDto;
-import ru.practicum.shareit.item.dto.CommentRefundDto;
-import ru.practicum.shareit.item.dto.ItemBookingDto;
-import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemRefundDto;
+import ru.practicum.shareit.item.comment.model.dto.CommentCreateDto;
+import ru.practicum.shareit.item.comment.model.dto.CommentDto;
+import ru.practicum.shareit.item.model.dto.ItemDto;
+import ru.practicum.shareit.item.model.dto.ItemPatchDto;
 import ru.practicum.shareit.item.service.ItemService;
+import ru.practicum.shareit.utils.ControllerConstants;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/items")
-@RequiredArgsConstructor
 @Slf4j
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/items")
 public class ItemController {
 
-    private final ItemService service;
+    private final ItemService itemService;
 
     @PostMapping
-    public ItemRefundDto add(
-            @RequestHeader("X-Sharer-User-Id") long userId,
-            @RequestBody ItemDto itemDto
-    ) {
-        log.info("Post item with userId={}", userId);
-        return service.add(userId, itemDto);
+    public ItemDto create(@RequestHeader(ControllerConstants.USER_ID_HEADER) long userId,
+                          @RequestBody ItemDto itemDto) {
+        log.info("POST : create item {}", itemDto);
+        return itemService.createItem(userId, itemDto);
     }
 
-
     @PatchMapping("/{itemId}")
-    public ItemRefundDto edit(
-            @RequestHeader("X-Sharer-User-Id") long userId,
-            @PathVariable long itemId,
-            @RequestBody ItemDto itemDto
-    ) {
-        log.info("Patch item with userId={}, itemId={}", userId, itemId);
-        return service.edit(userId, itemId, itemDto);
+    public ItemDto update(@RequestHeader(ControllerConstants.USER_ID_HEADER) long userId, @PathVariable long itemId,
+                          @RequestBody ItemPatchDto itemPatchDto) {
+        log.info("PATCH : update item id : {} body : {}", itemId, itemPatchDto);
+        return itemService.updateItem(userId, itemId, itemPatchDto);
     }
 
     @GetMapping("/{itemId}")
-    public ItemBookingDto findById(
-            @RequestHeader("X-Sharer-User-Id") long userId,
-            @PathVariable long itemId
-    ) {
-        log.info("Get item with userId={}, itemId={}", userId, itemId);
-        return service.findById(userId, itemId);
+    public ItemDto find(@RequestHeader(ControllerConstants.USER_ID_HEADER) long userId,
+                        @PathVariable long itemId) {
+        log.info("GET : get item id : {}", itemId);
+        return itemService.getItem(userId, itemId);
     }
 
     @GetMapping
-    public List<ItemBookingDto> findAll(
-            @RequestHeader("X-Sharer-User-Id") long userId,
-            @RequestParam int from,
-            @RequestParam int size
-    ) {
-        log.info("Get item with userId={}", userId);
-        return service.findAllForUser(from, size, userId);
+    public List<ItemDto> findAllForUser(@RequestHeader(ControllerConstants.USER_ID_HEADER) long userId,
+                                        @RequestParam(defaultValue = "0") int from,
+                                        @RequestParam(defaultValue = "5") int size) {
+        log.info("GET : get items for user id : {}", userId);
+        return itemService.getItemsForUser(userId, from, size);
     }
 
     @GetMapping("/search")
-    public List<ItemRefundDto> search(
-            @RequestParam String text,
-            @RequestParam int from,
-            @RequestParam int size
-    ) {
-        log.info("Get item search={}", text);
-        return service.search(text, from, size);
+    public List<ItemDto> search(@RequestParam String text,
+                                @RequestParam(defaultValue = "0") int from,
+                                @RequestParam(defaultValue = "5") int size) {
+        log.info("GET : search items by text : {}", text);
+        return itemService.searchItems(text, from, size);
     }
 
     @PostMapping("/{itemId}/comment")
-    public CommentRefundDto addComment(
-            @RequestHeader("X-Sharer-User-Id") long userId,
-            @RequestBody CommentDto commentDto,
-            @PathVariable Long itemId
-    ) {
-        log.info("Post comment itemId={}", itemId);
-        return service.addComment(userId, itemId, commentDto);
+    public CommentDto addComment(@RequestHeader(ControllerConstants.USER_ID_HEADER) long userId,
+                                 @PathVariable long itemId, @RequestBody CommentCreateDto commentCreateDto) {
+        log.info("POST : add comment : {} to item : {}", commentCreateDto, itemId);
+        return itemService.addComment(userId, itemId, commentCreateDto);
     }
 }

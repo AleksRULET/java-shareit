@@ -1,27 +1,33 @@
 package ru.practicum.shareit.client;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.lang.Nullable;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+import ru.practicum.shareit.constant.Constants;
 
-@Slf4j
+import java.util.List;
+import java.util.Map;
+
 public class BaseClient {
     protected final RestTemplate rest;
-    private static String CACHE_HTTP;
-    private static ResponseEntity<Object> CACHE_OBJECT;
 
     public BaseClient(RestTemplate rest) {
         this.rest = rest;
+    }
+
+    private static ResponseEntity<Object> prepareGatewayResponse(ResponseEntity<Object> response) {
+        if (response.getStatusCode().is2xxSuccessful()) {
+            return response;
+        }
+
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.status(response.getStatusCode());
+
+        if (response.hasBody()) {
+            return responseBuilder.body(response.getBody());
+        }
+
+        return responseBuilder.build();
     }
 
     protected ResponseEntity<Object> get(String path) {
@@ -40,12 +46,12 @@ public class BaseClient {
         return post(path, null, null, body);
     }
 
-    protected <T> ResponseEntity<Object> post(String path, long userId, T body) {
+    protected <T> ResponseEntity<Object>
+    post(String path, long userId, T body) {
         return post(path, userId, null, body);
     }
 
-    protected <T> ResponseEntity<Object> post(String path, Long userId,
-                                              @Nullable Map<String, Object> parameters, T body) {
+    protected <T> ResponseEntity<Object> post(String path, Long userId, @Nullable Map<String, Object> parameters, T body) {
         return makeAndSendRequest(HttpMethod.POST, path, userId, parameters, body);
     }
 
@@ -53,8 +59,7 @@ public class BaseClient {
         return put(path, userId, null, body);
     }
 
-    protected <T> ResponseEntity<Object> put(String path, long userId,
-                                             @Nullable Map<String, Object> parameters, T body) {
+    protected <T> ResponseEntity<Object> put(String path, long userId, @Nullable Map<String, Object> parameters, T body) {
         return makeAndSendRequest(HttpMethod.PUT, path, userId, parameters, body);
     }
 
@@ -70,8 +75,11 @@ public class BaseClient {
         return patch(path, userId, null, body);
     }
 
-    protected <T> ResponseEntity<Object> patch(String path, Long userId,
-                                               @Nullable Map<String, Object> parameters, T body) {
+    protected ResponseEntity<Object> patch(String path, long userId, Map<String, Object> parameters) {
+        return patch(path, userId, parameters, null);
+    }
+
+    protected <T> ResponseEntity<Object> patch(String path, Long userId, @Nullable Map<String, Object> parameters, T body) {
         return makeAndSendRequest(HttpMethod.PATCH, path, userId, parameters, body);
     }
 
@@ -87,18 +95,10 @@ public class BaseClient {
         return makeAndSendRequest(HttpMethod.DELETE, path, userId, parameters, null);
     }
 
-    private <T> ResponseEntity<Object> makeAndSendRequest(HttpMethod method, String path, Long userId,
-                                                          @Nullable Map<String, Object> parameters, @Nullable T body) {
+    private <T> ResponseEntity<Object> makeAndSendRequest(HttpMethod method, String path, Long userId, @Nullable Map<String, Object> parameters, @Nullable T body) {
         HttpEntity<T> requestEntity = new HttpEntity<>(body, defaultHeaders(userId));
-        ResponseEntity<Object> shareitServerResponse;
 
-        String cache = saveCacheHttp(method, path, userId, parameters);
-        boolean methodGet = method.equals(HttpMethod.GET);
-        if (cache.equals(CACHE_HTTP) && methodGet) {
-            return CACHE_OBJECT;
-        } else {
-            CACHE_HTTP = cache;
-        }
+        ResponseEntity<Object> shareitServerResponse;
         try {
             if (parameters != null) {
                 shareitServerResponse = rest.exchange(path, method, requestEntity, Object.class, parameters);
@@ -108,11 +108,7 @@ public class BaseClient {
         } catch (HttpStatusCodeException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsByteArray());
         }
-        ResponseEntity<Object> result = prepareGatewayResponse(shareitServerResponse);
-        if (methodGet) {
-            CACHE_OBJECT = result;
-        }
-        return result;
+        return prepareGatewayResponse(shareitServerResponse);
     }
 
     private HttpHeaders defaultHeaders(Long userId) {
@@ -120,32 +116,8 @@ public class BaseClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         if (userId != null) {
-            headers.set("X-Sharer-User-Id", String.valueOf(userId));
+            headers.set(Constants.USER_ID_HEADER, String.valueOf(userId));
         }
         return headers;
-    }
-
-    private static ResponseEntity<Object> prepareGatewayResponse(ResponseEntity<Object> response) {
-        if (response.getStatusCode().is2xxSuccessful()) {
-            return response;
-        }
-
-        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.status(response.getStatusCode());
-
-        if (response.hasBody()) {
-            return responseBuilder.body(response.getBody());
-        }
-
-        return responseBuilder.build();
-    }
-
-    private String saveCacheHttp(HttpMethod method, String path, Long userId,
-                                 @Nullable Map<String, Object> parameters) {
-        if (parameters != null) {
-            return method.name() + path + userId  + "/" + parameters.values().stream().map(Object::toString)
-                    .collect(Collectors.joining("p"));
-        } else {
-            return method.name() + path + userId + "/";
-        }
     }
 }

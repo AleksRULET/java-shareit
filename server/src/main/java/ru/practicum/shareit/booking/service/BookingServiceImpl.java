@@ -1,140 +1,168 @@
 package ru.practicum.shareit.booking.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.booking.BookingMapper;
-import ru.practicum.shareit.booking.dao.BookingRepository;
-import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.booking.dto.BookingItemDto;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.booking.model.State;
 import ru.practicum.shareit.booking.model.Status;
-import ru.practicum.shareit.exception.*;
-import ru.practicum.shareit.item.dao.ItemRepository;
+import ru.practicum.shareit.booking.model.dto.BookingCreateDto;
+import ru.practicum.shareit.booking.model.dto.BookingDto;
+import ru.practicum.shareit.booking.model.dto.BookingMapper;
+import ru.practicum.shareit.booking.model.dto.State;
+import ru.practicum.shareit.booking.storage.BookingRepository;
+import ru.practicum.shareit.error.exceptions.EntityNotFoundException;
+import ru.practicum.shareit.error.exceptions.ItemNotAvailableException;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.dao.UserRepository;
+import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.service.UserService;
+import ru.practicum.shareit.utils.pagination.PageRequestWithOffset;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-@Transactional(readOnly = true)
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BookingServiceImpl implements BookingService {
 
-    private final BookingRepository bookingDao;
-    private final UserRepository userDao;
-    private final ItemRepository itemDao;
+    private final Sort sort = Sort.by(Sort.Direction.DESC, "start");
 
+    private final BookingRepository bookingRepository;
+
+    private final ItemRepository itemRepository;
+
+    private final UserService userService;
+
+    private final BookingMapper bookingMapper;
+
+    @Override
     @Transactional
-    @Override
-    public BookingItemDto add(Long userId, BookingDto bookingDto) {
-        Item item = itemDao.findById(bookingDto.getItemId())
-                .orElseThrow(() -> new NotObjectException("Вещь не найжена"));
-        if (!item.getIsAvailable()) {
-            throw new NotAvailableException("Нет доступа на вещь");
+    public BookingDto createBooking(long userId, BookingCreateDto bookingCreateDto) {
+        User booker = userService.getUser(userId);
+        Item item = itemRepository.findById(bookingCreateDto.getItemId())
+                .orElseThrow(() -> new EntityNotFoundException("No item with id : " + bookingCreateDto.getItemId()));
+        Booking booking = bookingMapper.toBooking(bookingCreateDto, item, booker);
+        if (booking.getBooker().equals(booking.getItem().getOwner())) {
+            throw new EntityNotFoundException("Owner can't book item");
         }
-        if (item.getOwner().getId().equals(userId)) {
-            throw new NotBookingException("Пользователь не может бронировать свою вещь");
+        if (!item.getAvailable()) {
+            throw new ItemNotAvailableException(String.format("Item id : %s is booked", item.getId()));
         }
-        User user = userDao.findById(userId)
-                .orElseThrow(() -> new NotObjectException("Пользователь не найден"));
-        Booking booking = BookingMapper.toBooking(user, item, bookingDto);
-        booking.setStatus(Status.WAITING);
-        return BookingMapper.toBookingItemDto(bookingDao.save(booking));
+        Booking createdBooking = bookingRepository.save(booking);
+        return bookingMapper.toBookingDto(createdBooking);
     }
 
+    @Override
     @Transactional
-    @Override
-    public BookingItemDto approved(Long userId, Long bookingId, Boolean approved) {
-        Booking booking = bookingDao.findById(bookingId).orElseThrow(() -> new NotBookingException("Нет запроса"));
-        if (booking.getStatus() != Status.WAITING) {
-            throw new StatusConfirmedException("Ответ по бранированию зафиксирован ранее");
+    public BookingDto approveBooking(long userId, long bookingId, boolean status) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("No booking with id : " + bookingId));
+        if (booking.getStatus().equals(Status.APPROVED)) {
+            throw new IllegalArgumentException("Can't change status of approved booking");
         }
-        if (userId.equals(booking.getItem().getOwner().getId())) {
-            Status status;
-            if (approved) {
-                status = Status.APPROVED;
-            } else {
-                status = Status.REJECTED;
-            }
-            booking.setStatus(status);
-            return BookingMapper.toBookingItemDto(booking);
+        User owner = userService.getUser(userId);
+        Item item = booking.getItem();
+        if (!item.getOwner().equals(owner)) {
+            throw new EntityNotFoundException(String.format("No entity booking id : %s for user id : %s",
+                    booking.getId(), owner.getId()));
+        }
+        if (status) {
+            booking.setStatus(Status.APPROVED);
         } else {
-            throw new NotOwnerException("Не являетесь владельцем вещи");
+            booking.setStatus(Status.REJECTED);
         }
+        Booking createdBooking = bookingRepository.save(booking);
+        return bookingMapper.toBookingDto(createdBooking);
     }
 
     @Override
-    public BookingItemDto findById(Long userId, Long bookingId) {
-        Booking booking = bookingDao.findById(bookingId).orElseThrow(() -> new NotObjectException("Отсутствует бронь"));
-        if (booking.getBooker().getId().equals(userId) || booking.getItem().getOwner().getId().equals(userId)) {
-            return BookingMapper.toBookingItemDto(booking);
-        } else {
-            throw new NotOwnerException("Не являетесь владельцем вещи");
+    public BookingDto getBooking(long userId, long bookingId) {
+        User user = userService.getUser(userId);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("No booking with id : " + bookingId));
+        Item item = booking.getItem();
+        if (!booking.getBooker().equals(user) && !item.getOwner().equals(user)) {
+            throw new EntityNotFoundException(String.format("No entity booking id : %s for user id : %s",
+                    booking.getId(), user.getId()));
         }
+        return bookingMapper.toBookingDto(booking);
     }
 
     @Override
-    public List<BookingItemDto> findAllForUser(Long userId, State state, Integer page, Integer size) {
-        userDao.findById(userId).orElseThrow(() -> new NotObjectException("Пользователь не найден"));
-        List<Booking> bookings = new ArrayList<>();
+    public List<BookingDto> getBookings(long userId, String stateParam, int from, int size) {
+        userService.getUser(userId);
+        State state = State.of(stateParam);
+        if (Objects.isNull(state)) {
+            throw new IllegalArgumentException("Unknown state: " + stateParam);
+        }
+        Page<Booking> bookings = Page.empty();
+        Pageable pageable = PageRequestWithOffset.of(from, size, sort);
         switch (state) {
             case ALL:
-                bookings = bookingDao.findByBooker_IdOrderByStartDesc(userId, PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByBooker_Id(userId, pageable);
                 break;
             case CURRENT:
-                bookings = bookingDao.findByBooker_IdAndStartBeforeAndEndAfterOrderByStartDesc(
-                        userId, LocalDateTime.now(), LocalDateTime.now(), PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByBooker_IdAndStatusInAndStartIsBeforeAndEndIsAfter(userId,
+                        List.of(Status.APPROVED, Status.WAITING, Status.REJECTED), LocalDateTime.now(),
+                        LocalDateTime.now(), pageable);
                 break;
             case PAST:
-                bookings = bookingDao.findByBooker_IdAndEndBeforeOrderByStartDesc(userId, LocalDateTime.now(),
-                        PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByBooker_IdAndStatusInAndEndIsBefore(userId,
+                        List.of(Status.APPROVED, Status.WAITING), LocalDateTime.now(), pageable);
                 break;
             case FUTURE:
-                bookings = bookingDao.findByBooker_IdAndStartAfterOrderByStartDesc(userId, LocalDateTime.now(),
-                        PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByBooker_IdAndStatusInAndStartIsAfter(userId,
+                        List.of(Status.APPROVED, Status.WAITING), LocalDateTime.now(), pageable);
                 break;
             case WAITING:
-                bookings = bookingDao.findByBooker_IdAndStatus(userId, Status.WAITING,
-                        PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByBooker_IdAndStatus(userId, Status.WAITING, pageable);
                 break;
             case REJECTED:
-                bookings = bookingDao.findByBooker_IdAndStatus(userId, Status.REJECTED,
-                        PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByBooker_IdAndStatus(userId, Status.REJECTED, pageable);
                 break;
         }
-        return BookingMapper.toBookingsItemDto(bookings);
+        return bookings.map(bookingMapper::toBookingDto).getContent();
     }
 
     @Override
-    public List<BookingItemDto> findAllForOwner(Long userId, State state, Integer page, Integer size) {
-        User user = userDao.findById(userId).orElseThrow(() -> new NotObjectException("Пользователь не найден"));
-        List<Booking> bookings = new ArrayList<>();
+    public List<BookingDto> getBookingsItemOwner(long userId, String stateParam, int from, int size) {
+        userService.getUser(userId);
+        State state = State.of(stateParam);
+        if (Objects.isNull(state)) {
+            throw new IllegalArgumentException("Unknown state: " + stateParam);
+        }
+        Page<Booking> bookings = Page.empty();
+        Pageable pageable = PageRequestWithOffset.of(from, size, sort);
         switch (state) {
             case ALL:
-                bookings = bookingDao.findAllByOwner(user, PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByItem_Owner_Id(userId, pageable);
                 break;
             case CURRENT:
-                bookings = bookingDao.findCurrentOwner(user, PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByItem_Owner_IdAndStatusInAndStartIsBeforeAndEndIsAfter(userId,
+                        List.of(Status.APPROVED, Status.WAITING, Status.REJECTED), LocalDateTime.now(),
+                        LocalDateTime.now(), pageable);
                 break;
             case PAST:
-                bookings = bookingDao.findPastOwner(user, PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByItem_Owner_IdAndStatusInAndEndIsBefore(userId,
+                        List.of(Status.APPROVED, Status.WAITING), LocalDateTime.now(), pageable);
                 break;
             case FUTURE:
-                bookings = bookingDao.findFutureOwner(user, PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByItem_Owner_IdAndStatusInAndStartIsAfter(userId,
+                        List.of(Status.APPROVED, Status.WAITING), LocalDateTime.now(), pageable);
                 break;
             case WAITING:
-                bookings = bookingDao.findStatusOwner(user, Status.WAITING, PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByItem_Owner_IdAndStatus(userId, Status.WAITING, pageable);
                 break;
             case REJECTED:
-                bookings = bookingDao.findStatusOwner(user, Status.REJECTED, PageRequest.of(page, size)).getContent();
+                bookings = bookingRepository.findAllByItem_Owner_IdAndStatus(userId, Status.REJECTED, pageable);
                 break;
         }
-        return BookingMapper.toBookingsItemDto(bookings);
+        return bookings.map(bookingMapper::toBookingDto).getContent();
     }
+
 }
