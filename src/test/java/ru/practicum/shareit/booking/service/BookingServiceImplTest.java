@@ -10,16 +10,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.Status;
-import ru.practicum.shareit.booking.dto.BookingCreateDto;
-import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.booking.BookingMapper;
-import ru.practicum.shareit.booking.repository.BookingRepository;
-import ru.practicum.shareit.exception.EntityNotFoundException;
+import ru.practicum.shareit.booking.model.dto.BookingCreateDto;
+import ru.practicum.shareit.booking.model.dto.BookingDto;
+import ru.practicum.shareit.booking.model.dto.BookingMapper;
+import ru.practicum.shareit.booking.storage.BookingRepository;
+import ru.practicum.shareit.error.exceptions.EntityNotFoundException;
+import ru.practicum.shareit.error.exceptions.ItemNotAvailableException;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +47,49 @@ class BookingServiceImplTest {
     @InjectMocks
     private BookingServiceImpl bookingService;
 
+    @Test
+    void createBookingWhenUserAndBookingCreateDtoValidThenReturnBookingDto() {
+        long userId = 0L;
+        User user = new User();
 
+        long itemId = 0L;
+        boolean itemAvailable = true;
+        Item item = new Item();
+        item.setId(itemId);
+        item.setAvailable(itemAvailable);
+        item.setOwner(user);
+
+        User booker = new User();
+        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime end = LocalDateTime.now().plusHours(1);
+        Booking booking = new Booking();
+        booking.setBooker(booker);
+        booking.setStart(start);
+        booking.setEnd(end);
+        booking.setItem(item);
+
+        BookingCreateDto bookingCreateDto = new BookingCreateDto();
+        bookingCreateDto.setItemId(itemId);
+
+        long bookingDtoId = 0L;
+        BookingDto bookingDto = new BookingDto();
+        bookingDto.setId(bookingDtoId);
+
+        Mockito.when(userService.getUser(userId))
+                .thenReturn(user);
+        Mockito.when(itemRepository.findById(itemId))
+                .thenReturn(Optional.of(item));
+        Mockito.when(bookingMapper.toBooking(bookingCreateDto, item, user))
+                .thenReturn(booking);
+        Mockito.when(bookingRepository.save(booking))
+                .thenReturn(booking);
+        Mockito.when(bookingMapper.toBookingDto(booking))
+                .thenReturn(bookingDto);
+
+        BookingDto bookingDtoReturned = bookingService.createBooking(userId, bookingCreateDto);
+
+        assertThat(bookingDtoReturned).isEqualTo(bookingDto);
+    }
 
     @Test
     void createBookingWhenItemNotExistsReturnInterrupt() {
@@ -147,7 +191,7 @@ class BookingServiceImplTest {
         Mockito.when(bookingMapper.toBooking(bookingCreateDto, item, user))
                 .thenReturn(booking);
 
-        assertThrows(EntityNotFoundException.class,
+        assertThrows(ItemNotAvailableException.class,
                 () -> bookingService.createBooking(userId, bookingCreateDto));
 
         Mockito.verify(bookingRepository, Mockito.never()).save(Mockito.any());
@@ -188,7 +232,7 @@ class BookingServiceImplTest {
         Mockito.when(bookingMapper.toBooking(bookingCreateDto, item, user))
                 .thenReturn(booking);
 
-        assertThrows(EntityNotFoundException.class,
+        assertThrows(DateTimeException.class,
                 () -> bookingService.createBooking(userId, bookingCreateDto));
 
         Mockito.verify(bookingRepository, Mockito.never()).save(Mockito.any());
@@ -360,8 +404,13 @@ class BookingServiceImplTest {
         booking.setItem(item);
         booking.setStatus(bookingStatus);
 
+        Mockito.when(bookingRepository.findById(bookingId))
+                .thenReturn(Optional.of(booking));
+        Mockito.when(userService.getUser(userId))
+                .thenReturn(user);
 
-
+        assertThrows(EntityNotFoundException.class,
+                () -> bookingService.approveBooking(userId, bookingId, status));
 
         Mockito.verify(bookingRepository, Mockito.never()).save(Mockito.any());
     }
@@ -406,7 +455,40 @@ class BookingServiceImplTest {
         assertThat(bookingDtoReturned).isEqualTo(bookingDto);
     }
 
+    @Test
+    void getBookingWhenUserInvalidThenInterrupt() {
+        long userId = 0L;
+        User user = new User();
 
+        long itemId = 0L;
+        boolean itemAvailable = true;
+        User owner = new User();
+        Item item = new Item();
+        item.setId(itemId);
+        item.setAvailable(itemAvailable);
+        item.setOwner(owner);
+
+        long bookingId = 1L;
+        User booker = new User();
+        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime end = LocalDateTime.now().plusHours(1);
+        Status bookingStatus = Status.WAITING;
+        Booking booking = new Booking();
+        booking.setId(bookingId);
+        booking.setBooker(booker);
+        booking.setStart(start);
+        booking.setEnd(end);
+        booking.setItem(item);
+        booking.setStatus(bookingStatus);
+
+        Mockito.when(userService.getUser(userId))
+                .thenReturn(user);
+        Mockito.when(bookingRepository.findById(bookingId))
+                .thenReturn(Optional.of(booking));
+
+        assertThrows(EntityNotFoundException.class,
+                () -> bookingService.getBooking(userId, bookingId));
+    }
 
     @Test
     void getBookingWhenBookingNotExistThenInterrupt() {

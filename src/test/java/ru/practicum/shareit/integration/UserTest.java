@@ -11,8 +11,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.repository.UserRepository;
+import ru.practicum.shareit.user.model.dto.UserDto;
+import ru.practicum.shareit.user.storage.UserRepository;
 
 import java.util.Optional;
 

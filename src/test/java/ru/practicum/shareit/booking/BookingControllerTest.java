@@ -10,11 +10,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.model.Status;
-import ru.practicum.shareit.booking.dto.BookingCreateDto;
-import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.model.dto.BookingCreateDto;
+import ru.practicum.shareit.booking.model.dto.BookingDto;
 import ru.practicum.shareit.booking.service.BookingService;
-import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.item.model.dto.ItemDto;
+import ru.practicum.shareit.user.model.dto.UserDto;
 import ru.practicum.shareit.utils.ControllerConstants;
 
 import java.time.LocalDateTime;

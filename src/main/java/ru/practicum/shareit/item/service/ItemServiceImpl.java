@@ -8,24 +8,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.Status;
-import ru.practicum.shareit.booking.dto.BookingItemDto;
-import ru.practicum.shareit.booking.BookingMapper;
-import ru.practicum.shareit.booking.repository.BookingRepository;
-import ru.practicum.shareit.exception.EntityNotFoundException;
-import ru.practicum.shareit.exception.PermissionException;
-import ru.practicum.shareit.exception.UserRestrictionException;
-import ru.practicum.shareit.item.model.Comment;
-import ru.practicum.shareit.item.dto.CommentCreateDto;
-import ru.practicum.shareit.item.dto.CommentDto;
-import ru.practicum.shareit.item.CommentMapper;
-import ru.practicum.shareit.item.repository.CommentRepository;
+import ru.practicum.shareit.booking.model.dto.BookingItemDto;
+import ru.practicum.shareit.booking.model.dto.BookingMapper;
+import ru.practicum.shareit.booking.storage.BookingRepository;
+import ru.practicum.shareit.error.exceptions.EntityNotFoundException;
+import ru.practicum.shareit.error.exceptions.PermissionException;
+import ru.practicum.shareit.error.exceptions.UserRestrictionException;
+import ru.practicum.shareit.item.comment.model.Comment;
+import ru.practicum.shareit.item.comment.model.dto.CommentCreateDto;
+import ru.practicum.shareit.item.comment.model.dto.CommentDto;
+import ru.practicum.shareit.item.comment.model.dto.CommentMapper;
+import ru.practicum.shareit.item.comment.storage.CommentRepository;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.ItemMapper;
-import ru.practicum.shareit.item.dto.ItemPatchDto;
-import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.item.model.dto.ItemDto;
+import ru.practicum.shareit.item.model.dto.ItemMapper;
+import ru.practicum.shareit.item.model.dto.ItemPatchDto;
+import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
-import ru.practicum.shareit.request.repository.ItemRequestRepository;
+import ru.practicum.shareit.request.storage.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 import ru.practicum.shareit.utils.JsonMergePatchUtils;
@@ -61,7 +61,7 @@ public class ItemServiceImpl implements ItemService {
         User owner = userService.getUser(userId);
         if (Objects.nonNull(itemDto.getRequestId())) {
             ItemRequest itemRequest = itemRequestRepository.findById(itemDto.getRequestId())
-                    .orElseThrow(() -> new NoSuchElementException("Не найдена вещь с id : " + itemDto.getRequestId()));
+                    .orElseThrow(() -> new NoSuchElementException("No item request id : " + itemDto.getRequestId()));
             item = ItemMapper.toItem(itemDto, itemRequest, owner);
         } else {
             item = ItemMapper.toItem(itemDto, owner);
@@ -74,9 +74,9 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public ItemDto updateItem(long userId, long itemId, ItemPatchDto itemPatchDto) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new EntityNotFoundException("Не найдена вещь с id : " + itemId));
+                .orElseThrow(() -> new EntityNotFoundException("No item with id : " + itemId));
         if (!item.getOwner().getId().equals(userId)) {
-            throw new PermissionException("Пользователь не имеет разрешения");
+            throw new PermissionException("User doesn't have permission for updating item id :" + item.getId());
         }
         Item itemPatch = ItemMapper.toItem(itemPatchDto, item.getOwner());
         itemPatch.setId(itemId);
@@ -88,7 +88,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto getItem(long userId, long itemId) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new EntityNotFoundException("Сущность не найдена"));
+                .orElseThrow(() -> new EntityNotFoundException("No item with id : " + itemId));
         ItemDto itemDto = ItemMapper.toItemDto(item);
         if (item.getOwner().getId().equals(userId)) {
             itemDto.setLastBooking(getLastBooking(item.getId())
@@ -172,12 +172,13 @@ public class ItemServiceImpl implements ItemService {
     public CommentDto addComment(long userId, long itemId, CommentCreateDto commentCreateDto) {
         User author = userService.getUser(userId);
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new EntityNotFoundException("Сущность не найдена"));
+                .orElseThrow(() -> new EntityNotFoundException("No item with id : " + itemId));
         Comment comment = commentMapper.toComment(commentCreateDto, author, item);
         List<Booking> bookings = bookingRepository.findAllByBooker_IdAndItem_IdAndStatusInAndEndIsBefore(author.getId(),
                 item.getId(), List.of(Status.APPROVED), LocalDateTime.now());
         if (bookings.isEmpty()) {
-            throw new UserRestrictionException("Пользователь не может оставлять комментарий");
+            throw new UserRestrictionException(String.format("User id : %s can't leave comment for item id : %s",
+                    author.getId(), item.getId()));
         }
         Comment createdComment = commentRepository.save(comment);
         return commentMapper.toCommentDto(createdComment);

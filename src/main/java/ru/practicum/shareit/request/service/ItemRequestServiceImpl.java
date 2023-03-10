@@ -6,14 +6,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.exception.EntityNotFoundException;
+import ru.practicum.shareit.error.exceptions.EntityNotFoundException;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.request.model.ItemRequest;
-import ru.practicum.shareit.request.dto.ItemRequestCreateDto;
-import ru.practicum.shareit.request.dto.ItemRequestDto;
-import ru.practicum.shareit.request.ItemRequestMapper;
-import ru.practicum.shareit.request.repository.ItemRequestRepository;
+import ru.practicum.shareit.request.model.dto.ItemRequestCreateDto;
+import ru.practicum.shareit.request.model.dto.ItemRequestDto;
+import ru.practicum.shareit.request.model.dto.ItemRequestMapper;
+import ru.practicum.shareit.request.storage.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 import ru.practicum.shareit.utils.pagination.PageRequestWithOffset;
@@ -92,7 +92,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     public ItemRequestDto getItemRequest(long userId, long requestId) {
         userService.getUser(userId);
         ItemRequest itemRequest = itemRequestRepository.findById(requestId)
-                .orElseThrow(() -> new EntityNotFoundException("Запрос не найден"));
+                .orElseThrow(() -> new EntityNotFoundException("No item request id : " + requestId));
         List<Item> items = itemRepository.findByRequest_Id(requestId);
         return itemRequestMapper.toItemRequestDto(itemRequest, items);
     }

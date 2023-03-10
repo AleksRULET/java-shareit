@@ -3,9 +3,9 @@ package ru.practicum.shareit.user.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.exception.EntityNotFoundException;
+import ru.practicum.shareit.error.exceptions.EntityNotFoundException;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.repository.UserRepository;
+import ru.practicum.shareit.user.storage.UserRepository;
 import ru.practicum.shareit.utils.JsonMergePatchUtils;
 
 import java.util.List;
@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUser(long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new EntityNotFoundException("No user with id : " + id));
     }
 
     @Override

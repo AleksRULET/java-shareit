@@ -15,7 +15,7 @@ public class PageRequestWithOffset extends PageRequest {
 
     public static PageRequest of(int offset, int size, @NonNull Sort sort) {
         if (offset < 0) {
-            throw new IllegalArgumentException("Не может быть ниже нуля");
+            throw new IllegalArgumentException("Page index must not be less than zero");
         }
         return new PageRequestWithOffset(offset, size, sort);
     }

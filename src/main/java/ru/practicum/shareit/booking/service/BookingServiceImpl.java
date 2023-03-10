@@ -8,15 +8,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.Status;
-import ru.practicum.shareit.booking.dto.BookingCreateDto;
-import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.booking.BookingMapper;
-import ru.practicum.shareit.booking.model.State;
-import ru.practicum.shareit.booking.repository.BookingRepository;
-import ru.practicum.shareit.exception.EntityNotFoundException;
-import ru.practicum.shareit.exception.ItemNotAvailableException;
+import ru.practicum.shareit.booking.model.dto.BookingCreateDto;
+import ru.practicum.shareit.booking.model.dto.BookingDto;
+import ru.practicum.shareit.booking.model.dto.BookingMapper;
+import ru.practicum.shareit.booking.model.dto.State;
+import ru.practicum.shareit.booking.storage.BookingRepository;
+import ru.practicum.shareit.error.exceptions.EntityNotFoundException;
+import ru.practicum.shareit.error.exceptions.ItemNotAvailableException;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 import ru.practicum.shareit.utils.pagination.PageRequestWithOffset;
@@ -46,16 +46,16 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto createBooking(long userId, BookingCreateDto bookingCreateDto) {
         User booker = userService.getUser(userId);
         Item item = itemRepository.findById(bookingCreateDto.getItemId())
-                .orElseThrow(() -> new EntityNotFoundException("Нет вещи с id : " + bookingCreateDto.getItemId()));
+                .orElseThrow(() -> new EntityNotFoundException("No item with id : " + bookingCreateDto.getItemId()));
         Booking booking = bookingMapper.toBooking(bookingCreateDto, item, booker);
         if (booking.getBooker().equals(booking.getItem().getOwner())) {
-            throw new EntityNotFoundException("Владелец не может забронировать");
+            throw new EntityNotFoundException("Owner can't book item");
         }
         if (!item.getAvailable()) {
-            throw new ItemNotAvailableException(String.format("Вещь id : %s забронирована", item.getId()));
+            throw new ItemNotAvailableException(String.format("Item id : %s is booked", item.getId()));
         }
         if (booking.getEnd().isBefore(booking.getStart())) {
-            throw new DateTimeException(String.format("Дата окончания [%s] должна быть после даты старта [%s]",
+            throw new DateTimeException(String.format("End date [%s] should be after start date [%s]",
                     booking.getEnd(), booking.getStart()));
         }
         Booking createdBooking = bookingRepository.save(booking);
@@ -66,14 +66,15 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingDto approveBooking(long userId, long bookingId, boolean status) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Ничего не найдено с id : " + bookingId));
+                .orElseThrow(() -> new EntityNotFoundException("No booking with id : " + bookingId));
         if (booking.getStatus().equals(Status.APPROVED)) {
-            throw new IllegalArgumentException("Ошибка изменения статуса");
+            throw new IllegalArgumentException("Can't change status of approved booking");
         }
         User owner = userService.getUser(userId);
         Item item = booking.getItem();
         if (!item.getOwner().equals(owner)) {
-            throw new EntityNotFoundException("Сущность не найдена");
+            throw new EntityNotFoundException(String.format("No entity booking id : %s for user id : %s",
+                    booking.getId(), owner.getId()));
         }
         if (status) {
             booking.setStatus(Status.APPROVED);
@@ -88,10 +89,11 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto getBooking(long userId, long bookingId) {
         User user = userService.getUser(userId);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Сущность не найдена"));
+                .orElseThrow(() -> new EntityNotFoundException("No booking with id : " + bookingId));
         Item item = booking.getItem();
         if (!booking.getBooker().equals(user) && !item.getOwner().equals(user)) {
-            throw new EntityNotFoundException("Сущность не найдена");
+            throw new EntityNotFoundException(String.format("No entity booking id : %s for user id : %s",
+                    booking.getId(), user.getId()));
         }
         return bookingMapper.toBookingDto(booking);
     }
@@ -101,7 +103,7 @@ public class BookingServiceImpl implements BookingService {
         userService.getUser(userId);
         State state = State.of(stateParam);
         if (Objects.isNull(state)) {
-            throw new IllegalArgumentException("Неизвестое состояние: " + stateParam);
+            throw new IllegalArgumentException("Unknown state: " + stateParam);
         }
         Page<Booking> bookings = Page.empty();
         Pageable pageable = PageRequestWithOffset.of(from, size, sort);
@@ -137,7 +139,7 @@ public class BookingServiceImpl implements BookingService {
         userService.getUser(userId);
         State state = State.of(stateParam);
         if (Objects.isNull(state)) {
-            throw new IllegalArgumentException("Неизвестое состояние: " + stateParam);
+            throw new IllegalArgumentException("Unknown state: " + stateParam);
         }
         Page<Booking> bookings = Page.empty();
         Pageable pageable = PageRequestWithOffset.of(from, size, sort);
