@@ -15,7 +15,6 @@ import ru.practicum.shareit.constant.Constants;
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
-import java.util.Collections;
 
 @Controller
 @RequestMapping("/items")
