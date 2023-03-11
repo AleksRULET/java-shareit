@@ -58,7 +58,7 @@ public class ItemController {
     }
 
     @GetMapping("/search")
-    public Object search(@RequestParam String text,
+    public ResponseEntity<Object> search(@RequestParam String text,
                          @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                          @Positive @RequestParam(defaultValue = "5") Integer size) {
         log.info("GET : search items by text : {}", text);
