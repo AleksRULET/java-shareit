@@ -63,9 +63,7 @@ public class ItemController {
     public ResponseEntity<Object> search(@RequestParam String text,
                          @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                          @Positive @RequestParam(defaultValue = "5") Integer size) {
-        if(text.isBlank()) {
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.OK);
-        }
+        if(text.isBlank()) return new ResponseEntity<>(Collections.emptyList(), HttpStatus.OK);
         log.info("GET : search items by text : {}", text);
         return itemClient.searchItems(text, from, size);
     }
