@@ -9,13 +9,8 @@
     </parent>
 
     <artifactId>shareit-server</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
 
     <name>ShareIt Server</name>
-
-    <properties>
-        <jsonpatch.version>1.9</jsonpatch.version>
-    </properties>
 
     <dependencies>
         <dependency>

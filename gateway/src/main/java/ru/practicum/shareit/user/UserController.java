@@ -10,7 +10,6 @@ import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserPatchDto;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 
 @Controller
@@ -48,7 +47,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Object> delete(@NotNull @Positive @PathVariable Long userId) {
+    public ResponseEntity<Object> delete(@Positive @PathVariable Long userId) {
         log.info("DELETE : remove user id : {}", userId);
         return userClient.deleteUser(userId);
     }

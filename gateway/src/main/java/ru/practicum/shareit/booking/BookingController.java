@@ -11,10 +11,8 @@ import ru.practicum.shareit.booking.dto.Status;
 import ru.practicum.shareit.constant.Constants;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
-import java.time.DateTimeException;
 
 @Controller
 @RequestMapping(path = "/bookings")
@@ -29,10 +27,6 @@ public class BookingController {
     public ResponseEntity<Object> create(@RequestHeader(Constants.USER_ID_HEADER) long userId,
                                          @Valid @RequestBody BookingCreateDto bookingCreateDto) {
         log.info("POST : create booking {}", bookingCreateDto);
-        if (bookingCreateDto.getEnd().isBefore(bookingCreateDto.getStart())) {
-            throw new DateTimeException(String.format("End date [%s] should be after start date [%s]",
-                    bookingCreateDto.getEnd(), bookingCreateDto.getStart()));
-        }
         return bookingClient.createBooking(userId, bookingCreateDto);
     }
 
@@ -53,7 +47,7 @@ public class BookingController {
 
     @GetMapping
     public ResponseEntity<Object> findAllForUser(@RequestHeader(Constants.USER_ID_HEADER) long userId,
-                                                 @NotNull @RequestParam(defaultValue = "ALL") String state,
+                                                 @RequestParam(defaultValue = "ALL") String state,
                                                  @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                                                  @Positive @RequestParam(defaultValue = "5") Integer size) {
         Status statusBooking = Status.of(state)
@@ -64,7 +58,7 @@ public class BookingController {
 
     @GetMapping("/owner")
     public ResponseEntity<Object> findAllForUserItemOwner(@RequestHeader(Constants.USER_ID_HEADER) long userId,
-                                                          @NotNull @RequestParam(defaultValue = "ALL") String state,
+                                                          @RequestParam(defaultValue = "ALL") String state,
                                                           @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                                                           @Positive @RequestParam(defaultValue = "5") Integer size) {
         Status statusBooking = Status.of(state)

@@ -20,12 +20,9 @@ import java.time.LocalDateTime;
 public class BookingCreateDto {
     @NotNull
     private Long itemId;
-    @NotNull
     @FutureOrPresent
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime start;
-    @NotNull
-    @Future
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime end;
 }
