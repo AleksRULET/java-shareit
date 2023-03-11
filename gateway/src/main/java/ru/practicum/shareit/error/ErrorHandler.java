@@ -27,6 +27,7 @@ public class ErrorHandler {
         log.warn(validationException.getMessage());
         return new ErrorResponse(validationException.getMessage());
     }
+
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleThrowable(final Throwable validationException) {
