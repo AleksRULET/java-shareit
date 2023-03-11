@@ -16,14 +16,14 @@ public class ErrorHandler {
 
     @ExceptionHandler({DateTimeException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleDateTimeValidationError(Exception validationException) {
+    public ErrorResponse handleDateTimeValidationError(IllegalArgumentException validationException) {
         log.warn(validationException.getMessage());
         return new ErrorResponse(validationException.getMessage());
     }
 
     @ExceptionHandler({IllegalArgumentException.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorResponse handleValidationError(Exception validationException) {
+    public ErrorResponse handleValidationError(IllegalArgumentException validationException) {
         log.warn(validationException.getMessage());
         return new ErrorResponse(validationException.getMessage());
     }
