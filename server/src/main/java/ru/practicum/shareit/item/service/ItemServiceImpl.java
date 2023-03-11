@@ -159,9 +159,6 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemDto> searchItems(String text, int from, int size) {
-        if (text.isBlank()) {
-            return Collections.emptyList();
-        }
         Pageable pageable = PageRequestWithOffset.of(from, size);
         Page<Item> pageItems = itemRepository.search(text, pageable);
         return pageItems.getContent().stream()

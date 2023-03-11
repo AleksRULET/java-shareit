@@ -38,15 +38,15 @@ public class BookingController {
 
     @PatchMapping("/{bookingId}")
     public ResponseEntity<Object> approve(@RequestHeader(Constants.USER_ID_HEADER) long userId,
-                                          @NotNull @Positive @PathVariable Long bookingId,
-                                          @NotNull @RequestParam Boolean approved) {
+                                          @Positive @PathVariable Long bookingId,
+                                          @RequestParam Boolean approved) {
         log.info("PATCH : approve {} booking {}", approved, bookingId);
         return bookingClient.approveBooking(userId, bookingId, approved);
     }
 
     @GetMapping("/{bookingId}")
     public ResponseEntity<Object> find(@RequestHeader(Constants.USER_ID_HEADER) long userId,
-                                       @NotNull @Positive @PathVariable Long bookingId) {
+                                       @Positive @PathVariable Long bookingId) {
         log.info("GET : get booking id : {}", bookingId);
         return bookingClient.getBooking(userId, bookingId);
     }

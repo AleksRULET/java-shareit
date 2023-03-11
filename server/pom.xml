@@ -66,7 +66,6 @@
         <dependency>
             <groupId>com.github.fge</groupId>
             <artifactId>json-patch</artifactId>
-            <version>${jsonpatch.version}</version>
         </dependency>
 
     </dependencies>

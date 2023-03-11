@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.shareit.error.model.ErrorResponse;
 
+import javax.validation.ConstraintViolationException;
 import java.time.DateTimeException;
 
 @Slf4j
@@ -26,5 +27,19 @@ public class ErrorHandler {
         log.warn(validationException.getMessage());
         return new ErrorResponse(validationException.getMessage());
     }
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleThrowable(final Throwable validationException) {
+        log.error("500", validationException);
+        validationException.printStackTrace();
+        return new ErrorResponse("An unexpected error has occurred");
+    }
 
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleValidationAnnotation(ConstraintViolationException validationException) {
+        log.warn(validationException.getMessage());
+        validationException.printStackTrace();
+        return new ErrorResponse(validationException.getMessage());
+    }
 }

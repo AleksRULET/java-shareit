@@ -13,9 +13,9 @@ import ru.practicum.shareit.Item.dto.ItemPatchDto;
 import ru.practicum.shareit.constant.Constants;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
+import java.util.Collections;
 
 @Controller
 @RequestMapping("/items")
@@ -37,7 +37,7 @@ public class ItemController {
 
     @PatchMapping("/{itemId}")
     public ResponseEntity<Object> update(@RequestHeader(Constants.USER_ID_HEADER) long userId,
-                                         @NotNull @Positive @PathVariable Long itemId,
+                                         @Positive @PathVariable Long itemId,
                                          @Valid @RequestBody ItemPatchDto itemPatchDto) {
         log.info("PATCH : update item id : {} body : {}", itemId, itemPatchDto);
         return itemClient.updateItem(userId, itemId, itemPatchDto);
@@ -45,7 +45,7 @@ public class ItemController {
 
     @GetMapping("/{itemId}")
     public ResponseEntity<Object> find(@RequestHeader(Constants.USER_ID_HEADER) long userId,
-                                       @NotNull @PathVariable Long itemId) {
+                                       @PathVariable Long itemId) {
         log.info("GET : get item id : {}", itemId);
         return itemClient.getItem(userId, itemId);
     }
@@ -59,16 +59,19 @@ public class ItemController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Object> search(@RequestParam String text,
-                                         @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
-                                         @Positive @RequestParam(defaultValue = "5") Integer size) {
-        log.info("GET : search items by text : {}", text);
-        return itemClient.searchItems(text, from, size);
+    public Object search(@RequestParam String text,
+                         @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
+                         @Positive @RequestParam(defaultValue = "5") Integer size) {
+        if (text.isBlank()) {
+            log.info("GET : search items by text : {}", text);
+            return itemClient.searchItems(text, from, size);
+        }
+        return Collections.emptyList();
     }
 
     @PostMapping("/{itemId}/comment")
     public ResponseEntity<Object> addComment(@RequestHeader(Constants.USER_ID_HEADER) long userId,
-                                             @NotNull @Positive @PathVariable Long itemId,
+                                             @Positive @PathVariable Long itemId,
                                              @Valid @RequestBody CommentCreateDto commentCreateDto) {
         log.info("POST : add comment : {} to item : {}", commentCreateDto, itemId);
         return commentClient.addComment(userId, itemId, commentCreateDto);
