@@ -63,10 +63,10 @@ public class ItemController {
                          @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                          @Positive @RequestParam(defaultValue = "5") Integer size) {
         if (text.isBlank()) {
-            log.info("GET : search items by text : {}", text);
-            return itemClient.searchItems(text, from, size);
+            return Collections.emptyList();
         }
-        return Collections.emptyList();
+        log.info("GET : search items by text : {}", text);
+        return itemClient.searchItems(text, from, size);
     }
 
     @PostMapping("/{itemId}/comment")
