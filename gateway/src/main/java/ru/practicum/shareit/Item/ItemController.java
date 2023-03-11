@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.*;
 import ru.practicum.shareit.Item.comment.CommentClient;
 import ru.practicum.shareit.Item.comment.dto.CommentCreateDto;
 import ru.practicum.shareit.Item.dto.ItemDto;
@@ -15,6 +16,7 @@ import ru.practicum.shareit.constant.Constants;
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
+import java.util.Collections;
 
 @Controller
 @RequestMapping("/items")
@@ -61,6 +63,9 @@ public class ItemController {
     public ResponseEntity<Object> search(@RequestParam String text,
                          @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                          @Positive @RequestParam(defaultValue = "5") Integer size) {
+        if(text.isBlank()) {
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.OK);
+        }
         log.info("GET : search items by text : {}", text);
         return itemClient.searchItems(text, from, size);
     }
