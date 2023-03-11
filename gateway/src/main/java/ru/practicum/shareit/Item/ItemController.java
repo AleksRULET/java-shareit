@@ -62,9 +62,7 @@ public class ItemController {
     public Object search(@RequestParam String text,
                          @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                          @Positive @RequestParam(defaultValue = "5") Integer size) {
-        if (text.isBlank()) {
-            return Collections.emptyList();
-        }
+
         log.info("GET : search items by text : {}", text);
         return itemClient.searchItems(text, from, size);
     }
