@@ -17,8 +17,6 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 
     List<Item> findByRequest_Id(long id);
 
-    Page<Item> findAll(Pageable pageable);
-
     @Query("select i from Item i where i.available = true " +
             "and (lower(i.name) like lower(concat('%', :text ,'%')) " +
             "or lower(i.description) like lower(concat('%', :text ,'%')))")
