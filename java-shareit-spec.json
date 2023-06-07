@@ -1,0 +1,426 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Shareit API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080"
+    }
+  ],
+  "tags": [
+    {
+      "description": "API для работы с заявками на аренду",
+      "name": "Бронирование"
+    },
+    {
+      "description": "API для работы с вещами",
+      "name": "Вещи"
+    },
+    {
+      "description": "API для работы с запросами на аренду",
+      "name": "Запросы"
+    },
+    {
+      "description": "API для работы с пользователями",
+      "name": "Пользователи"
+    }
+  ],
+  "paths": {
+    "/requests": {
+      "post": {
+        "summary": "POST requests",
+        "operationId": "create",
+        "parameters": [
+          {
+            "name": "X-Sharer-User-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Запросы"
+        ]
+      }
+    },
+    "/requests/all": {
+      "get": {
+        "summary": "GET requests/all",
+        "operationId": "findAllCreatedByOther",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "X-Sharer-User-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Запросы"
+        ]
+      }
+    },
+    "/requests/{requestId}": {
+      "get": {
+        "summary": "GET requests/{requestId}",
+        "operationId": "find",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "X-Sharer-User-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Запросы"
+        ]
+      }
+    },
+    "/bookings": {
+      "post": {
+        "summary": "POST bookings",
+        "operationId": "create",
+        "parameters": [
+          {
+            "name": "X-Sharer-User-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Бронирование"
+        ]
+      }
+    },
+    "/bookings/owner": {
+      "get": {
+        "summary": "GET bookings/owner",
+        "operationId": "findAllForUserItemOwner",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "X-Sharer-User-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Бронирование"
+        ]
+      }
+    },
+    "/bookings/{bookingId}": {
+      "patch": {
+        "summary": "PATCH bookings/{bookingId}",
+        "operationId": "approve",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "approved",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "X-Sharer-User-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Бронирование"
+        ]
+      }
+    },
+    "/users": {
+      "post": {
+        "summary": "POST users",
+        "operationId": "create",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Пользователи"
+        ]
+      }
+    },
+    "/users/{userId}": {
+      "delete": {
+        "summary": "DELETE users/{userId}",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Пользователи"
+        ]
+      }
+    },
+    "/items": {
+      "post": {
+        "summary": "POST items",
+        "operationId": "create",
+        "parameters": [
+          {
+            "name": "X-Sharer-User-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Вещи"
+        ]
+      }
+    },
+    "/items/search": {
+      "get": {
+        "summary": "GET items/search",
+        "operationId": "search",
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Вещи"
+        ]
+      }
+    },
+    "/items/{itemId}": {
+      "patch": {
+        "summary": "PATCH items/{itemId}",
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "X-Sharer-User-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Вещи"
+        ]
+      }
+    },
+    "/items/{itemId}/comment": {
+      "post": {
+        "summary": "POST items/{itemId}/comment",
+        "operationId": "addComment",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "X-Sharer-User-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Вещи"
+        ]
+      }
+    }
+  }
+}
